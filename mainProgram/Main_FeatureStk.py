@@ -118,34 +118,35 @@ def countEnabledFeatureType(featureDict):
 
     return len(enabledFeatureList), enabledFeatureList
 def buildAllOffFeatureDict(baseDict):
-    """把 iFeature/pFeature/ampFeature/ovpFeature/centerGDPFeature/wordEmbeddingFeature 全部開關關閉，保留其餘參數結構"""
+    """把 iFeature/pFeature/ampFeature/ovpFeature/wordEmbeddingFeature/centerGDPFeature 全部開關關閉，保留其餘參數結構"""
     offDict = copy.deepcopy(baseDict)
-    for groupName in ['iFeature', 'pFeature', 'ampFeature', 'ovpFeature']:
+    for groupName in ['iFeature', 'pFeature', 'ampFeature', 'ovpFeature', 'wordEmbeddingFeature']:
         if groupName not in offDict:
             continue
         for key, value in offDict[groupName].items():
+            if key == 'modelDirPath':  # 不是開關參數，是模型存檔路徑前綴，跳過不動
+                continue
             if isinstance(value, list):
                 value[0] = False
             else:
                 offDict[groupName][key] = False
     offDict['centerGDPFeature']['Usage'] = False
-    offDict['wordEmbeddingFeature']['Usage'] = False
     return offDict
 
 
 def getRealEnabledFeatureTypeList(featureDict):
     """列出真正會產生欄位的 feature type（(groupName, key) tuple 清單）"""
     enabledList = []
-    for groupName in ['iFeature', 'pFeature', 'ampFeature', 'ovpFeature']:
+    for groupName in ['iFeature', 'pFeature', 'ampFeature', 'ovpFeature', 'wordEmbeddingFeature']:
         if groupName not in featureDict:
             continue
         for key, value in featureDict[groupName].items():
+            if key == 'modelDirPath':  # 不是開關參數，是模型存檔路徑前綴，跳過不動
+                continue
             if value is True or (isinstance(value, list) and value[0] is True):
                 enabledList.append((groupName, key))
     if featureDict['centerGDPFeature'].get('Usage') is True:
         enabledList.append(('centerGDPFeature', 'Usage'))
-    if featureDict['wordEmbeddingFeature'].get('Usage') is True:
-        enabledList.append(('wordEmbeddingFeature', 'Usage'))
     return enabledList
 
 
@@ -413,10 +414,10 @@ saveFeatureTypeReferenceTable(featureTypeColumnMap=mergedFeatureTypeColumnMap,
 def getFeatureTypeDisplayName(typeName):
     """
     把 feature type 名稱轉成表格用的顯示名稱。
-    像 centerGDPFeature/wordEmbeddingFeature 這種整組只用單一 Usage 開關代表的 feature type，
-    key 都叫 'Usage'，若只取 typeName.split('.',1)[-1] 會讓這兩者的顯示名稱都變成沒有意義的 'Usage'，
-    因此這種情況改用去掉字尾 'Feature' 的 groupName 當顯示名稱（例如 wordEmbeddingFeature -> wordEmbedding）。
-    其餘 feature type（例如 iFeature.AAC）維持原本取 key 當顯示名稱的邏輯。
+    像 centerGDPFeature 這種整組只用單一 Usage 開關代表的 feature type，key 叫 'Usage'，
+    若只取 typeName.split('.',1)[-1] 顯示名稱會變成沒有意義的 'Usage'，
+    因此這種情況改用去掉字尾 'Feature' 的 groupName 當顯示名稱（例如 centerGDPFeature -> centerGDP）。
+    其餘 feature type（例如 iFeature.AAC、wordEmbeddingFeature.Word2Vec）維持原本取 key 當顯示名稱的邏輯。
     """
     groupName, key = typeName.split('.', 1)
     if key == 'Usage':
@@ -486,10 +487,15 @@ encodeObj.dataEncodeSetup(saveFeatureDict=featureDict,  # normalization 前傳�
 # 但實際 encode 要換回 originalFeatureDict，OVPC/GAAC/formula/27 個單一數值特徵才會真的產生欄位
 encodeObj.featureDict = originalFeatureDict
 
-# word embedding 若啟用，先用完整的 DS_Train 序列（正負樣本合併）把 wordEmbeddingDict['method']
-# 指定的方法訓練一次模型並存檔，之後 dataEncodeOutPut() 內對 DS_Train/DS_Indp/DS_Val 的每一次呼叫
-# 都只會載入這份模型做 transform，確保三者共用同一個訓練集算出來的向量空間，而不是各自重新訓練
-if originalFeatureDict['wordEmbeddingFeature'].get('Usage') is True:
+# word embedding(Word2Vec/FastText...)若有任一方法啟用，先用完整的 DS_Train 序列（正負樣本合併）
+# 各自訓練一次模型並存檔，之後 dataEncodeOutPut() 內對 DS_Train/DS_Indp/DS_Val 的每一次呼叫都只會
+# 載入這份模型做 transform，確保三者共用同一個訓練集算出來的向量空間，而不是各自重新訓練
+wordEmbeddingMethodEnabled = any(
+    paramLi[0] is True
+    for key, paramLi in originalFeatureDict['wordEmbeddingFeature'].items()
+    if key != 'modelDirPath'
+)
+if wordEmbeddingMethodEnabled:
     DS_TrainAllSeqDict = {**DS_TrainNegSeqDict, **DS_TrainPosSeqDict}
     WordEmbeddingFeature.trainAndSaveModel(DS_TrainAllSeqDict, originalFeatureDict['wordEmbeddingFeature'])
 
