@@ -39,7 +39,7 @@ from openpyxl.styles import Alignment
 from sklearn.model_selection import train_test_split
 
 from userPackage.LoadDataset import LoadDataset
-from userPackage.FeatureStat_word_em import WordEmbeddingFeature
+from userPackage.FeatureStat_word2Vec import WordEmbeddingFeature
 from userPackage.FeatureStat_FastText import FastTextFeature
 
 

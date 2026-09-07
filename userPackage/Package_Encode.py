@@ -10,7 +10,7 @@ import json
 import os
 from MLProcess.PycaretWrapper import PycaretWrapper
 from devPackage.PackageCenterGDP import centerGDP
-from userPackage.FeatureStat_word_em import WordEmbeddingFeature
+from userPackage.FeatureStat_word2Vec import WordEmbeddingFeature
 from userPackage.FeatureStat_FastText import FastTextFeature
 
 
