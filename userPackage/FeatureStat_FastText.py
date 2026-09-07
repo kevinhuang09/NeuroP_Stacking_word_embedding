@@ -13,7 +13,7 @@ class FastTextFeature:
     把胺基酸序列切成固定長度的 k-mer 當作 FastText 的「word」，訓練(或載入)一份 FastText 模型，
     再把每條序列所有 k-mer word 的向量做平均或加總，得到一組固定長度(vectorSize)的 embedding 特徵，
     可當成一種新的 feature type 併入既有的 featureDict 系統(用法比照 FeatureStat_word2Vec.py 的
-    WordEmbeddingFeature，介面跟 devPackage 底下各個 XXX(seqDict, featureDict).getOutputDf() 一致)。
+    Word2VecFeature，介面跟 devPackage 底下各個 XXX(seqDict, featureDict).getOutputDf() 一致)。
 
     跟 Word2Vec 版本(FeatureStat_word2Vec.py)最大的差異是 FastText 會額外利用字元 n-gram(minN~maxN)
     學習「子詞」資訊，因此對訓練時沒看過的 k-mer(未知 word) 也能組出向量，不會像 Word2Vec 一樣直接查無該詞。

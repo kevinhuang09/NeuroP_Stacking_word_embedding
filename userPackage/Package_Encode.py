@@ -10,7 +10,7 @@ import json
 import os
 from MLProcess.PycaretWrapper import PycaretWrapper
 from devPackage.PackageCenterGDP import centerGDP
-from userPackage.FeatureStat_word2Vec import WordEmbeddingFeature
+from userPackage.FeatureStat_word2Vec import Word2VecFeature
 from userPackage.FeatureStat_FastText import FastTextFeature
 
 
@@ -40,14 +40,14 @@ class EncodeAllFeatures:
                 emaObj = EncodeModelAmp(inputData, self.featureDict['ampFeature'])  # windows 拉出去dict
                 eovpObj = OVP(inputData, self.featureDict['ovpFeature'])
                 eigObj = centerGDP(inputData, self.featureDict['centerGDPFeature'])
-                ewordEmObj = WordEmbeddingFeature(inputData, self.featureDict['wordEmFeature'])
+                eword2VecObj = Word2VecFeature(inputData, self.featureDict['word2VecFeature'])
                 efastTextObj = FastTextFeature(inputData, self.featureDict['fastTextFeature'])
                 a = eifObj.getOutputDf()
                 b = epfObj.getOutputDf()
                 c = emaObj.getOutputDf()
                 d = eovpObj.getOutputDf()
                 g = eigObj.getOutputDf()
-                h = ewordEmObj.getOutputDf()
+                h = eword2VecObj.getOutputDf()
                 i = efastTextObj.getOutputDf()
                 encodedDf = pd.concat([a, b], axis=1)
                 encodedDf = pd.concat([encodedDf, c], axis=1)
