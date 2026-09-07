@@ -81,19 +81,21 @@ MotifBitVecfeatureDict = {"Usage": False,
 centerGDPDict = {"Usage": False, "UseGap": False, "gap_size": -1}  # 若是預測每個 amino acid 的 label 在使用
 
 wordEmbeddingDict = {
+    "Usage": True,  # 總開關：關閉時整個 wordEmbeddingFeature type 都不會執行，不論底下各方法開關為何
+
     "Word2Vec": [True, "skipgram", 3, 100, 5],
     # [開關, mode("cbow"/"skipgram"), kmer_size, vector_size, window]
 
-    "FastText": [False, "skipgram", 3, 100, 5, 3, 6],
+    "FastText": [True, "skipgram", 3, 100, 5, 3, 6],
     # [開關, mode, kmer_size, vector_size, window, min_n, max_n]
 
-    "NNLM": [False, 3, 100, 128, 10],
+    "NNLM": [True, 3, 100, 128, 10],
     # [開關, kmer_size, vector_size, hidden_dim, epochs]（尚未實作）
 
-    "LSA": [False, 3, 100],
+    "LSA": [True, 3, 100],
     # [開關, kmer_size, n_components]（尚未實作）
 
-    "PPMI_SVD": [False, 3, 100],
+    "PPMI_SVD": [True, 3, 100],
     # [開關, kmer_size, n_components]（尚未實作）
 
     "modelDirPath": None,  # 各方法模型存檔路徑的共用前綴，需在 Main 程式依 dataName 動態設定
