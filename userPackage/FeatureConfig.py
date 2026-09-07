@@ -90,13 +90,13 @@ wordEmbeddingDict = {
     # [開關, mode, kmer_size, vector_size, window, min_n, max_n]
 
     "NNLM": [True, 3, 100, 128, 10],
-    # [開關, kmer_size, vector_size, hidden_dim, epochs]（尚未實作）
+    # [開關, kmer_size, vector_size, hidden_dim, epochs]
 
     "LSA": [True, 3, 100],
-    # [開關, kmer_size, n_components]（尚未實作）
+    # [開關, kmer_size, n_components]
 
     "PPMI_SVD": [True, 3, 100],
-    # [開關, kmer_size, n_components]（尚未實作）
+    # [開關, kmer_size, n_components]
 
     "modelDirPath": None,  # 各方法模型存檔路徑的共用前綴，需在 Main 程式依 dataName 動態設定
 }
