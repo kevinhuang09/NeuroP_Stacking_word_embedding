@@ -8,7 +8,7 @@ from gensim.models import Word2Vec
 GENSIM_MAJOR_VERSION = int(gensim.__version__.split('.')[0])
 
 
-class WordEmbeddingFeature:
+class Word2VecFeature:
     """
     把胺基酸序列切成固定長度的 k-mer 當作 word2vec 的「word」，訓練(或載入)一份 Word2Vec 模型，
     再把每條序列所有 k-mer word 的向量做平均或加總，得到一組固定長度(vectorSize)的 embedding 特徵，
@@ -30,7 +30,7 @@ class WordEmbeddingFeature:
     若不存在，才會用目前傳入的 seqDict 訓練一份新模型並存檔。
     這是為了讓 DS_Train / DS_Indp / DS_Val 共用「同一份」用訓練集算出來的向量空間，
     避免各自訓練造成向量不可比較、或是資料外洩。
-    正式流程請先呼叫 WordEmbeddingFeature.trainAndSaveModel()，
+    正式流程請先呼叫 Word2VecFeature.trainAndSaveModel()，
     傳入完整的訓練集序列(正負樣本合併)先訓練好模型，
     之後不論是 encode DS_Train、DS_Indp 或 DS_Val 都只會載入這份模型來 transform。
     """
@@ -72,7 +72,7 @@ class WordEmbeddingFeature:
     @staticmethod
     def _trainModel(seqDict, featureDict):
         kmerSize = featureDict.get("kmerSize", 3)
-        kmerSentenceLi = [WordEmbeddingFeature._sequenceToKmers(seq, kmerSize) for seq in seqDict.values()]
+        kmerSentenceLi = [Word2VecFeature._sequenceToKmers(seq, kmerSize) for seq in seqDict.values()]
 
         # gensim 4.0 把 size/iter 改名成 vector_size/epochs，兩個版本的參數名稱不相容，
         # 依安裝的 gensim 主版本號分別組出對應的關鍵字參數，讓程式碼同時相容 gensim 3.x 與 4.x
@@ -103,7 +103,7 @@ class WordEmbeddingFeature:
     def _transform(seqDict, model, kmerSize, vectorSize, aggregation):
         rowLi = []
         for sequence in seqDict.values():
-            kmerLi = WordEmbeddingFeature._sequenceToKmers(sequence, kmerSize)
+            kmerLi = Word2VecFeature._sequenceToKmers(sequence, kmerSize)
             vectorLi = [model.wv[kmer] for kmer in kmerLi if kmer in model.wv]
             if len(vectorLi) == 0:
                 rowVector = np.zeros(vectorSize)
@@ -112,7 +112,7 @@ class WordEmbeddingFeature:
             else:
                 rowVector = np.mean(vectorLi, axis=0)
             rowLi.append(rowVector)
-        columnNameLi = [f'wordEm_{i}' for i in range(vectorSize)]
+        columnNameLi = [f'word2Vec_{i}' for i in range(vectorSize)]
         return pd.DataFrame(rowLi, columns=columnNameLi)
 
     @classmethod

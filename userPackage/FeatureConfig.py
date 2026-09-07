@@ -80,7 +80,7 @@ MotifBitVecfeatureDict = {"Usage": False,
 
 centerGDPDict = {"Usage": False, "UseGap": False, "gap_size": -1}  # 若是預測每個 amino acid 的 label 在使用
 
-wordEmFeatureDict = {"Usage": True,  # 是否啟用 word embedding 特徵
+word2VecFeatureDict = {"Usage": True,  # 是否啟用 word embedding 特徵
                      "kmerSize": 3,  # 切 k-mer 的長度(構成 word2vec 中的一個"word")
                      "vectorSize": 100,  # word2vec 向量維度，也是最終輸出的 feature 數
                      "window": 5,  # word2vec 訓練時的上下文視窗大小
@@ -107,5 +107,5 @@ featureDict = {'iFeature': ifeatureDict,
                'ampFeature': AMPfeatureDict,
                'ovpFeature': OVPfeatureDict,
                'centerGDPFeature': centerGDPDict,
-               'wordEmFeature': wordEmFeatureDict,
+               'word2VecFeature': word2VecFeatureDict,
                'fastTextFeature': fastTextFeatureDict}
