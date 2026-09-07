@@ -108,6 +108,17 @@ def countEnabledFeatureType(featureDict):
     enabledFeatureList = []
 
     for groupName, groupDict in featureDict.items():
+        if groupName == 'wordEmbeddingFeature':
+            # wordEmbeddingFeature 底下同時有整個 type 的總開關 'Usage'，以及各方法各自的開關，
+            # 跟其他「只有一個 Usage 代表整個 feature type」的群組不同，要特別處理：
+            # 總開關關閉時整組都不算，開啟時逐一列出各方法各自有沒有開啟
+            if groupDict.get('Usage') is True:
+                for key, value in groupDict.items():
+                    if key in ('Usage', 'modelDirPath'):
+                        continue
+                    if isinstance(value, list) and value[0] is True:
+                        enabledFeatureList.append(f'{groupName}.{key}')
+            continue
         if 'Usage' in groupDict:
             if groupDict.get('Usage') is True:
                 enabledFeatureList.append(f'{groupName}.Usage')
@@ -118,13 +129,18 @@ def countEnabledFeatureType(featureDict):
 
     return len(enabledFeatureList), enabledFeatureList
 def buildAllOffFeatureDict(baseDict):
-    """把 iFeature/pFeature/ampFeature/ovpFeature/wordEmbeddingFeature/centerGDPFeature 全部開關關閉，保留其餘參數結構"""
+    """
+    把 iFeature/pFeature/ampFeature/ovpFeature/wordEmbeddingFeature 底下每個 feature type 開關關閉，
+    centerGDPFeature 整個關閉，保留其餘參數結構。
+    wordEmbeddingFeature 的 'Usage' 是整個 type 的總開關（不是個別 feature type），維持原值不動，
+    這樣之後才能個別把 Word2Vec/FastText/... 單獨打開來做欄位偵測（若把總開關也關掉，底下每個方法都會失效）。
+    """
     offDict = copy.deepcopy(baseDict)
     for groupName in ['iFeature', 'pFeature', 'ampFeature', 'ovpFeature', 'wordEmbeddingFeature']:
         if groupName not in offDict:
             continue
         for key, value in offDict[groupName].items():
-            if key == 'modelDirPath':  # 不是開關參數，是模型存檔路徑前綴，跳過不動
+            if key in ('modelDirPath', 'Usage'):  # 不是個別開關：modelDirPath 是路徑前綴，Usage 是總開關
                 continue
             if isinstance(value, list):
                 value[0] = False
@@ -137,16 +153,22 @@ def buildAllOffFeatureDict(baseDict):
 def getRealEnabledFeatureTypeList(featureDict):
     """列出真正會產生欄位的 feature type（(groupName, key) tuple 清單）"""
     enabledList = []
-    for groupName in ['iFeature', 'pFeature', 'ampFeature', 'ovpFeature', 'wordEmbeddingFeature']:
+    for groupName in ['iFeature', 'pFeature', 'ampFeature', 'ovpFeature']:
         if groupName not in featureDict:
             continue
         for key, value in featureDict[groupName].items():
-            if key == 'modelDirPath':  # 不是開關參數，是模型存檔路徑前綴，跳過不動
-                continue
             if value is True or (isinstance(value, list) and value[0] is True):
                 enabledList.append((groupName, key))
     if featureDict['centerGDPFeature'].get('Usage') is True:
         enabledList.append(('centerGDPFeature', 'Usage'))
+    # wordEmbeddingFeature 的 'Usage' 是整個 type 的總開關，關閉時底下任何方法都不會真的產生欄位，
+    # 所以要先檢查總開關，開啟時才逐一列出各方法各自的開關
+    if featureDict['wordEmbeddingFeature'].get('Usage') is True:
+        for key, value in featureDict['wordEmbeddingFeature'].items():
+            if key in ('Usage', 'modelDirPath'):
+                continue
+            if isinstance(value, list) and value[0] is True:
+                enabledList.append(('wordEmbeddingFeature', key))
     return enabledList
 
 
@@ -487,13 +509,14 @@ encodeObj.dataEncodeSetup(saveFeatureDict=featureDict,  # normalization 前傳�
 # 但實際 encode 要換回 originalFeatureDict，OVPC/GAAC/formula/27 個單一數值特徵才會真的產生欄位
 encodeObj.featureDict = originalFeatureDict
 
-# word embedding(Word2Vec/FastText...)若有任一方法啟用，先用完整的 DS_Train 序列（正負樣本合併）
-# 各自訓練一次模型並存檔，之後 dataEncodeOutPut() 內對 DS_Train/DS_Indp/DS_Val 的每一次呼叫都只會
-# 載入這份模型做 transform，確保三者共用同一個訓練集算出來的向量空間，而不是各自重新訓練
-wordEmbeddingMethodEnabled = any(
+# word embedding(Word2Vec/FastText...)若總開關 Usage 開啟、且底下有任一方法啟用，先用完整的
+# DS_Train 序列（正負樣本合併）各自訓練一次模型並存檔，之後 dataEncodeOutPut() 內對
+# DS_Train/DS_Indp/DS_Val 的每一次呼叫都只會載入這份模型做 transform，
+# 確保三者共用同一個訓練集算出來的向量空間，而不是各自重新訓練
+wordEmbeddingMethodEnabled = originalFeatureDict['wordEmbeddingFeature'].get('Usage') is True and any(
     paramLi[0] is True
     for key, paramLi in originalFeatureDict['wordEmbeddingFeature'].items()
-    if key != 'modelDirPath'
+    if key not in ('Usage', 'modelDirPath')
 )
 if wordEmbeddingMethodEnabled:
     DS_TrainAllSeqDict = {**DS_TrainNegSeqDict, **DS_TrainPosSeqDict}

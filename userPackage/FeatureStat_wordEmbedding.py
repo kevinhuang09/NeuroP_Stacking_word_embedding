@@ -19,7 +19,8 @@ class WordEmbeddingFeature:
     wordEmbeddingFeature 是一個 type，底下 Word2Vec/FastText/NNLM/LSA/PPMI_SVD 各自是獨立的
     feature type(跟 iFeature 底下 AAC/CTDC/... 各自獨立一樣)，可以同時開啟多個。
 
-    wordEmbeddingDict 的格式（每個方法 key 對應一個位置參數 list，第一個元素永遠是開關）：
+    wordEmbeddingDict 的格式：
+        "Usage"     : 整個 wordEmbeddingFeature type 的總開關；False 時不論底下各方法開關為何都不會執行
         "Word2Vec"  : [開關, mode("cbow"/"skipgram"), kmer_size, vector_size, window]
         "FastText"  : [開關, mode, kmer_size, vector_size, window, min_n, max_n]
         "NNLM"      : [開關, kmer_size, vector_size, hidden_dim, epochs]（尚未實作，開啟會直接報錯）
@@ -28,6 +29,7 @@ class WordEmbeddingFeature:
     另外可選的 "modelDirPath" key（字串或 None）用來組出各方法各自的模型存檔路徑
     (f'{modelDirPath}_{methodName小寫}.model')，需在 Main 程式依 dataName 動態設定；
     若為 None 則每次都重新訓練、不存檔。
+    "Usage"、"modelDirPath" 都不是方法名稱，不會被當成 word embedding 方法處理。
 
     modelDirPath 若已存在對應模型檔案，會直接載入該模型做 transform，不會重新訓練；
     若不存在，才會用目前傳入的 seqDict 訓練一份新模型並存檔。
@@ -46,8 +48,10 @@ class WordEmbeddingFeature:
         self.seqsNameLi = list(seqDict.keys())
         self.modelDirPath = wordEmbeddingDict.get("modelDirPath")
         self.methodItemLi = [(name, paramLi) for name, paramLi in wordEmbeddingDict.items()
-                             if name != "modelDirPath"]
-        self.b_start = any(paramLi[0] for _, paramLi in self.methodItemLi)
+                             if name not in ("modelDirPath", "Usage")]
+        # 總開關 Usage 為 False 時，不論底下各方法開關為何都不執行
+        self.b_start = wordEmbeddingDict.get("Usage", False) is True and any(
+            paramLi[0] for _, paramLi in self.methodItemLi)
 
         if self.b_start is True:
             featureDfLi = []
@@ -158,9 +162,12 @@ class WordEmbeddingFeature:
         請在對 DS_Train/DS_Indp/DS_Val 執行 dataEncodeOutPut() 之前呼叫這個函式一次，
         確保三者都是載入同一份用訓練集訓練好的模型來做 transform。
         """
+        if wordEmbeddingDict.get("Usage", False) is not True:
+            return
+
         modelDirPath = wordEmbeddingDict.get("modelDirPath")
         for methodName, paramLi in wordEmbeddingDict.items():
-            if methodName == "modelDirPath" or paramLi[0] is not True:
+            if methodName in ("modelDirPath", "Usage") or paramLi[0] is not True:
                 continue
 
             if methodName == "Word2Vec":
