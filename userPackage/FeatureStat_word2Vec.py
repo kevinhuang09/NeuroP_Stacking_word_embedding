@@ -2,7 +2,10 @@ import os
 import re
 import numpy as np
 import pandas as pd
+import gensim
 from gensim.models import Word2Vec
+
+GENSIM_MAJOR_VERSION = int(gensim.__version__.split('.')[0])
 
 
 class WordEmbeddingFeature:
@@ -70,14 +73,23 @@ class WordEmbeddingFeature:
     def _trainModel(seqDict, featureDict):
         kmerSize = featureDict.get("kmerSize", 3)
         kmerSentenceLi = [WordEmbeddingFeature._sequenceToKmers(seq, kmerSize) for seq in seqDict.values()]
-        model = Word2Vec(sentences=kmerSentenceLi,
-                         vector_size=featureDict.get("vectorSize", 100),
-                         window=featureDict.get("window", 5),
-                         min_count=featureDict.get("minCount", 1),
-                         sg=featureDict.get("sg", 1),
-                         epochs=featureDict.get("epochs", 10),
-                         workers=1,
-                         seed=42)
+
+        # gensim 4.0 把 size/iter 改名成 vector_size/epochs，兩個版本的參數名稱不相容，
+        # 依安裝的 gensim 主版本號分別組出對應的關鍵字參數，讓程式碼同時相容 gensim 3.x 與 4.x
+        commonKwargs = dict(sentences=kmerSentenceLi,
+                            window=featureDict.get("window", 5),
+                            min_count=featureDict.get("minCount", 1),
+                            sg=featureDict.get("sg", 1),
+                            workers=1,
+                            seed=42)
+        if GENSIM_MAJOR_VERSION >= 4:
+            model = Word2Vec(vector_size=featureDict.get("vectorSize", 100),
+                             epochs=featureDict.get("epochs", 10),
+                             **commonKwargs)
+        else:
+            model = Word2Vec(size=featureDict.get("vectorSize", 100),
+                             iter=featureDict.get("epochs", 10),
+                             **commonKwargs)
         return model
 
     @staticmethod

@@ -2,7 +2,10 @@ import os
 import re
 import numpy as np
 import pandas as pd
+import gensim
 from gensim.models import FastText
+
+GENSIM_MAJOR_VERSION = int(gensim.__version__.split('.')[0])
 
 
 class FastTextFeature:
@@ -75,16 +78,25 @@ class FastTextFeature:
     def _trainModel(seqDict, featureDict):
         kmerSize = featureDict.get("kmerSize", 3)
         kmerSentenceLi = [FastTextFeature._sequenceToKmers(seq, kmerSize) for seq in seqDict.values()]
-        model = FastText(sentences=kmerSentenceLi,
-                         vector_size=featureDict.get("vectorSize", 100),
-                         window=featureDict.get("window", 5),
-                         min_count=featureDict.get("minCount", 1),
-                         sg=featureDict.get("sg", 1),
-                         epochs=featureDict.get("epochs", 10),
-                         min_n=featureDict.get("minN", 2),
-                         max_n=featureDict.get("maxN", 4),
-                         workers=1,
-                         seed=42)
+
+        # gensim 4.0 把 size/iter 改名成 vector_size/epochs，兩個版本的參數名稱不相容，
+        # 依安裝的 gensim 主版本號分別組出對應的關鍵字參數，讓程式碼同時相容 gensim 3.x 與 4.x
+        commonKwargs = dict(sentences=kmerSentenceLi,
+                            window=featureDict.get("window", 5),
+                            min_count=featureDict.get("minCount", 1),
+                            sg=featureDict.get("sg", 1),
+                            min_n=featureDict.get("minN", 2),
+                            max_n=featureDict.get("maxN", 4),
+                            workers=1,
+                            seed=42)
+        if GENSIM_MAJOR_VERSION >= 4:
+            model = FastText(vector_size=featureDict.get("vectorSize", 100),
+                             epochs=featureDict.get("epochs", 10),
+                             **commonKwargs)
+        else:
+            model = FastText(size=featureDict.get("vectorSize", 100),
+                             iter=featureDict.get("epochs", 10),
+                             **commonKwargs)
         return model
 
     @staticmethod
