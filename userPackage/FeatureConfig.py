@@ -80,32 +80,31 @@ MotifBitVecfeatureDict = {"Usage": False,
 
 centerGDPDict = {"Usage": False, "UseGap": False, "gap_size": -1}  # 若是預測每個 amino acid 的 label 在使用
 
-word2VecFeatureDict = {"Usage": True,  # 是否啟用 word embedding 特徵
-                     "kmerSize": 3,  # 切 k-mer 的長度(構成 word2vec 中的一個"word")
-                     "vectorSize": 100,  # word2vec 向量維度，也是最終輸出的 feature 數
-                     "window": 5,  # word2vec 訓練時的上下文視窗大小
-                     "minCount": 1,  # k-mer word 出現次數低於此值會被忽略、不建立向量
-                     "epochs": 10,  # word2vec 訓練的迭代次數
-                     "sg": 1,  # 1 = skip-gram, 0 = CBOW
-                     "aggregation": "mean",  # 序列內所有 k-mer 向量的聚合方式: "mean" 或 "sum"
-                     "modelPath": None}  # word2vec 模型存檔/讀取路徑，需在 Main 程式依 dataName 動態設定
+wordEmbeddingDict = {
+    "Usage": True,  # 是否啟用 word embedding 特徵，整組共用同一個開關
+    "method": "Word2Vec",  # 啟用時實際使用哪一種方法："Word2Vec"/"FastText"/"NNLM"/"LSA"/"PPMI_SVD"
 
-fastTextFeatureDict = {"Usage": False,  # 是否啟用 FastText 特徵
-                       "kmerSize": 3,  # 切 k-mer 的長度(構成 FastText 中的一個"word")
-                       "vectorSize": 100,  # FastText 向量維度，也是最終輸出的 feature 數
-                       "window": 5,  # FastText 訓練時的上下文視窗大小
-                       "minCount": 1,  # k-mer word 出現次數低於此值會被忽略、不建立向量
-                       "epochs": 10,  # FastText 訓練的迭代次數
-                       "sg": 1,  # 1 = skip-gram, 0 = CBOW
-                       "minN": 2,  # 字元 n-gram(子詞)的最小長度
-                       "maxN": 4,  # 字元 n-gram(子詞)的最大長度
-                       "aggregation": "mean",  # 序列內所有 k-mer 向量的聚合方式: "mean" 或 "sum"
-                       "modelPath": None}  # FastText 模型存檔/讀取路徑，需在 Main 程式依 dataName 動態設定
+    "Word2Vec": ["skipgram", 3, 100, 5],
+    # [mode("cbow"/"skipgram"), kmer_size, vector_size, window]
+
+    "FastText": ["skipgram", 3, 100, 5, 3, 6],
+    # [mode, kmer_size, vector_size, window, min_n, max_n]
+
+    "NNLM": [3, 100, 128, 10],
+    # [kmer_size, vector_size, hidden_dim, epochs]（尚未實作）
+
+    "LSA": [3, 100],
+    # [kmer_size, n_components]（尚未實作）
+
+    "PPMI_SVD": [3, 100],
+    # [kmer_size, n_components]（尚未實作）
+
+    "modelDirPath": None,  # 模型存檔路徑前綴，需在 Main 程式依 dataName 動態設定
+}
 
 featureDict = {'iFeature': ifeatureDict,
                'pFeature': PfeatureDict,
                'ampFeature': AMPfeatureDict,
                'ovpFeature': OVPfeatureDict,
                'centerGDPFeature': centerGDPDict,
-               'word2VecFeature': word2VecFeatureDict,
-               'fastTextFeature': fastTextFeatureDict}
+               'wordEmbeddingFeature': wordEmbeddingDict}

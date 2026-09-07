@@ -39,8 +39,7 @@ from openpyxl.styles import Alignment
 from sklearn.model_selection import train_test_split
 
 from userPackage.LoadDataset import LoadDataset
-from userPackage.FeatureStat_word2Vec import Word2VecFeature
-from userPackage.FeatureStat_FastText import FastTextFeature
+from userPackage.FeatureStat_wordEmbedding import WordEmbeddingFeature
 
 
 from userPackage.FeatureConfig import (
@@ -119,7 +118,7 @@ def countEnabledFeatureType(featureDict):
 
     return len(enabledFeatureList), enabledFeatureList
 def buildAllOffFeatureDict(baseDict):
-    """把 iFeature/pFeature/ampFeature/ovpFeature/centerGDPFeature 全部開關關閉，保留其餘參數結構"""
+    """把 iFeature/pFeature/ampFeature/ovpFeature/centerGDPFeature/wordEmbeddingFeature 全部開關關閉，保留其餘參數結構"""
     offDict = copy.deepcopy(baseDict)
     for groupName in ['iFeature', 'pFeature', 'ampFeature', 'ovpFeature']:
         if groupName not in offDict:
@@ -130,8 +129,7 @@ def buildAllOffFeatureDict(baseDict):
             else:
                 offDict[groupName][key] = False
     offDict['centerGDPFeature']['Usage'] = False
-    offDict['word2VecFeature']['Usage'] = False
-    offDict['fastTextFeature']['Usage'] = False
+    offDict['wordEmbeddingFeature']['Usage'] = False
     return offDict
 
 
@@ -146,10 +144,8 @@ def getRealEnabledFeatureTypeList(featureDict):
                 enabledList.append((groupName, key))
     if featureDict['centerGDPFeature'].get('Usage') is True:
         enabledList.append(('centerGDPFeature', 'Usage'))
-    if featureDict['word2VecFeature'].get('Usage') is True:
-        enabledList.append(('word2VecFeature', 'Usage'))
-    if featureDict['fastTextFeature'].get('Usage') is True:
-        enabledList.append(('fastTextFeature', 'Usage'))
+    if featureDict['wordEmbeddingFeature'].get('Usage') is True:
+        enabledList.append(('wordEmbeddingFeature', 'Usage'))
     return enabledList
 
 
@@ -262,11 +258,11 @@ paramPath = "../data/param/"  # 內含檔案: featureTypeDict.pkl, normalize.pkl
 featureStatPath = '../data/featureStat/'
 dataName = 'NeuroP_1'
 
-# word embedding 的 Word2Vec / FastText 模型存檔路徑跟 dataName 有關，FeatureConfig.py 裡沒有 dataName 可用，故在這裡動態設定
-featureDict['word2VecFeature']['modelPath'] = paramPath + f'{dataName}_word2vec.model'
-featureDict['fastTextFeature']['modelPath'] = paramPath + f'{dataName}_fastText.model'
+# word embedding 各方法(Word2Vec/FastText...)的模型存檔路徑前綴跟 dataName 有關，
+# FeatureConfig.py 裡沒有 dataName 可用，故在這裡動態設定
+featureDict['wordEmbeddingFeature']['modelDirPath'] = paramPath + f'{dataName}_wordEmbedding'
 
-normalizeMethodList = ['robust']  # normalization 目前先用standard 可自行改list
+normalizeMethodList = ['standard', 'robust']  # normalization 目前先用standard 可自行改list
 
 def saveFastaSeqCountStat(enable, fastaStatPath, statItems, statLabel='Fasta', fileMode='w', writeHeader=True):
     """
@@ -417,9 +413,9 @@ saveFeatureTypeReferenceTable(featureTypeColumnMap=mergedFeatureTypeColumnMap,
 def getFeatureTypeDisplayName(typeName):
     """
     把 feature type 名稱轉成表格用的顯示名稱。
-    像 centerGDPFeature/word2VecFeature/fastTextFeature 這種整組只用單一 Usage 開關代表的 feature type，
-    key 都叫 'Usage'，若只取 typeName.split('.',1)[-1] 會讓這三者的顯示名稱全部變成同一個字串 'Usage' 而無法區分，
-    因此這種情況改用去掉字尾 'Feature' 的 groupName 當顯示名稱（例如 word2VecFeature -> word2Vec）。
+    像 centerGDPFeature/wordEmbeddingFeature 這種整組只用單一 Usage 開關代表的 feature type，
+    key 都叫 'Usage'，若只取 typeName.split('.',1)[-1] 會讓這兩者的顯示名稱都變成沒有意義的 'Usage'，
+    因此這種情況改用去掉字尾 'Feature' 的 groupName 當顯示名稱（例如 wordEmbeddingFeature -> wordEmbedding）。
     其餘 feature type（例如 iFeature.AAC）維持原本取 key 當顯示名稱的邏輯。
     """
     groupName, key = typeName.split('.', 1)
@@ -490,17 +486,12 @@ encodeObj.dataEncodeSetup(saveFeatureDict=featureDict,  # normalization 前傳�
 # 但實際 encode 要換回 originalFeatureDict，OVPC/GAAC/formula/27 個單一數值特徵才會真的產生欄位
 encodeObj.featureDict = originalFeatureDict
 
-# word embedding 若啟用，先用完整的 DS_Train 序列（正負樣本合併）訓練一次 Word2Vec 模型並存檔，
-# 之後 dataEncodeOutPut() 內對 DS_Train/DS_Indp/DS_Val 的每一次呼叫都只會載入這份模型做 transform，
-# 確保三者共用同一個訓練集算出來的向量空間，而不是各自重新訓練
-if originalFeatureDict['word2VecFeature'].get('Usage') is True:
+# word embedding 若啟用，先用完整的 DS_Train 序列（正負樣本合併）把 wordEmbeddingDict['method']
+# 指定的方法訓練一次模型並存檔，之後 dataEncodeOutPut() 內對 DS_Train/DS_Indp/DS_Val 的每一次呼叫
+# 都只會載入這份模型做 transform，確保三者共用同一個訓練集算出來的向量空間，而不是各自重新訓練
+if originalFeatureDict['wordEmbeddingFeature'].get('Usage') is True:
     DS_TrainAllSeqDict = {**DS_TrainNegSeqDict, **DS_TrainPosSeqDict}
-    Word2VecFeature.trainAndSaveModel(DS_TrainAllSeqDict, originalFeatureDict['word2VecFeature'])
-
-# FastText 若啟用，同樣先用完整的 DS_Train 序列訓練一次並存檔，理由同上（避免 train/indp/val 各自重新訓練）
-if originalFeatureDict['fastTextFeature'].get('Usage') is True:
-    DS_TrainAllSeqDict = {**DS_TrainNegSeqDict, **DS_TrainPosSeqDict}
-    FastTextFeature.trainAndSaveModel(DS_TrainAllSeqDict, originalFeatureDict['fastTextFeature'])
+    WordEmbeddingFeature.trainAndSaveModel(DS_TrainAllSeqDict, originalFeatureDict['wordEmbeddingFeature'])
 
 encodeDS_TrainDf = encodeObj.dataEncodeOutPut(dataDict = DS_TrainDataDict)
 encodeDS_IndpDf = encodeObj.dataEncodeOutPut(dataDict = DS_IndpDataDict)
