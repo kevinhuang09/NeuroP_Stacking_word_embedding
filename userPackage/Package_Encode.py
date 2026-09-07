@@ -10,8 +10,7 @@ import json
 import os
 from MLProcess.PycaretWrapper import PycaretWrapper
 from devPackage.PackageCenterGDP import centerGDP
-from userPackage.FeatureStat_word2Vec import Word2VecFeature
-from userPackage.FeatureStat_FastText import FastTextFeature
+from userPackage.FeatureStat_wordEmbedding import WordEmbeddingFeature
 
 
 class EncodeAllFeatures:
@@ -40,21 +39,18 @@ class EncodeAllFeatures:
                 emaObj = EncodeModelAmp(inputData, self.featureDict['ampFeature'])  # windows 拉出去dict
                 eovpObj = OVP(inputData, self.featureDict['ovpFeature'])
                 eigObj = centerGDP(inputData, self.featureDict['centerGDPFeature'])
-                eword2VecObj = Word2VecFeature(inputData, self.featureDict['word2VecFeature'])
-                efastTextObj = FastTextFeature(inputData, self.featureDict['fastTextFeature'])
+                ewordEmbeddingObj = WordEmbeddingFeature(inputData, self.featureDict['wordEmbeddingFeature'])
                 a = eifObj.getOutputDf()
                 b = epfObj.getOutputDf()
                 c = emaObj.getOutputDf()
                 d = eovpObj.getOutputDf()
                 g = eigObj.getOutputDf()
-                h = eword2VecObj.getOutputDf()
-                i = efastTextObj.getOutputDf()
+                h = ewordEmbeddingObj.getOutputDf()
                 encodedDf = pd.concat([a, b], axis=1)
                 encodedDf = pd.concat([encodedDf, c], axis=1)
                 encodedDf = pd.concat([encodedDf, d], axis=1)
                 encodedDf = pd.concat([encodedDf, g], axis=1)
                 encodedDf = pd.concat([encodedDf, h], axis=1)
-                encodedDf = pd.concat([encodedDf, i], axis=1)
                 encodedDf.insert(encodedDf.shape[1], 'y', label)
                 encodedDfList.append(encodedDf)
             else:
