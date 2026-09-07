@@ -1,0 +1,26 @@
+*.csv
+*.fasta
+
+# 電腦B執行時會產生的其他資料/模型/紀錄檔（分析圖表、Excel分析表、encode/normalize scaler、pycaret模型、執行紀錄），
+# 不應該被同步回GitHub，避免git pull時跟電腦A衝突
+*.xlsx
+*.pkl
+*.jpg
+*.jpeg
+*.png
+*.log
+catboost_info/
+__pycache__/
+
+# featureStat底下processData產生的分析用json（remove_feature_list等），非程式碼設定檔，故忽略
+# 注意：data/param/*.json（featureTypeDict.json）是程式設定快照，仍要保留追蹤
+data/featureStat/*.json
+
+# devPackage/intermediate files 底下是PackagePFeature.py執行時算完馬上讀回的暫存檔（DDOR/QSO/RRI/SE/SEP/SER.csv），
+# 每次執行內容都會變，不是固定的參考資料表，故不再排除於*.csv規則之外
+
+# devPackage/tool 底下這些才是程式運行必要、不會變動的參考資料表，不要忽略
+!devPackage/PFeaturedata/*.csv
+!devPackage/iFeaturedata/*.csv
+!tool/SwissProtHumanProtein.fasta
+!tool/humen.fasta
