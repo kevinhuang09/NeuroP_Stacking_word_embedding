@@ -81,25 +81,22 @@ MotifBitVecfeatureDict = {"Usage": False,
 centerGDPDict = {"Usage": False, "UseGap": False, "gap_size": -1}  # 若是預測每個 amino acid 的 label 在使用
 
 wordEmbeddingDict = {
-    "Usage": True,  # 是否啟用 word embedding 特徵，整組共用同一個開關
-    "method": "Word2Vec",  # 啟用時實際使用哪一種方法："Word2Vec"/"FastText"/"NNLM"/"LSA"/"PPMI_SVD"
+    "Word2Vec": [True, "skipgram", 3, 100, 5],
+    # [開關, mode("cbow"/"skipgram"), kmer_size, vector_size, window]
 
-    "Word2Vec": ["skipgram", 3, 100, 5],
-    # [mode("cbow"/"skipgram"), kmer_size, vector_size, window]
+    "FastText": [False, "skipgram", 3, 100, 5, 3, 6],
+    # [開關, mode, kmer_size, vector_size, window, min_n, max_n]
 
-    "FastText": ["skipgram", 3, 100, 5, 3, 6],
-    # [mode, kmer_size, vector_size, window, min_n, max_n]
+    "NNLM": [False, 3, 100, 128, 10],
+    # [開關, kmer_size, vector_size, hidden_dim, epochs]（尚未實作）
 
-    "NNLM": [3, 100, 128, 10],
-    # [kmer_size, vector_size, hidden_dim, epochs]（尚未實作）
+    "LSA": [False, 3, 100],
+    # [開關, kmer_size, n_components]（尚未實作）
 
-    "LSA": [3, 100],
-    # [kmer_size, n_components]（尚未實作）
+    "PPMI_SVD": [False, 3, 100],
+    # [開關, kmer_size, n_components]（尚未實作）
 
-    "PPMI_SVD": [3, 100],
-    # [kmer_size, n_components]（尚未實作）
-
-    "modelDirPath": None,  # 模型存檔路徑前綴，需在 Main 程式依 dataName 動態設定
+    "modelDirPath": None,  # 各方法模型存檔路徑的共用前綴，需在 Main 程式依 dataName 動態設定
 }
 
 featureDict = {'iFeature': ifeatureDict,
