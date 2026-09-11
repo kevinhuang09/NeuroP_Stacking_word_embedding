@@ -1,6 +1,5 @@
 import os
 import gc
-import torch
 import numpy as np
 import pandas as pd
 
@@ -129,7 +128,9 @@ class LLMEmbeddingFeature:
     # ------------------------------------------------------------------
     @classmethod
     def _computeEmbedding(cls, methodName, paramLi, seqLi, blockSize):
-        # 延遲載入，避免沒開啟 LLM embedding 時，環境也被要求安裝 torch/transformers/esm 這些重量級套件
+        # 延遲載入，避免沒有 cache miss(不需要真的跑模型)時，環境也被要求安裝 torch/transformers/esm 這些重量級套件
+        # (這樣才能讓沒裝 torch 的環境，只要 embedding cache 已經算好，也能正常匯入這個模組並讀 cache)
+        import torch
         from main_T5_ESM import EmbeddingsFeature
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
