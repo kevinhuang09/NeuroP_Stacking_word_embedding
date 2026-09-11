@@ -33,7 +33,6 @@ class EmbeddingsFeature:
 
         # 转移到 GPU
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print("T5")
         input_ids = torch.tensor(ids['input_ids']).to(device)
         attention_mask = torch.tensor(ids['attention_mask']).to(device)
 
@@ -66,7 +65,6 @@ class EmbeddingsFeature:
 
         # 選擇設備（GPU 優先）
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print("esm FP16 計算中...")
 
         # ⚠️【保持 batch_tokens 為 torch.long，不能轉換為 FP16】⚠️
         batch_tokens = batch_tokens.to(device)  # 這裡保持 int64，不轉換 dtype
