@@ -2,6 +2,7 @@ import os
 import gc
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 
 
 class LLMEmbeddingFeature:
@@ -141,7 +142,7 @@ class LLMEmbeddingFeature:
             dim = cls._ESM_MODEL_DIM.get(esmModelName, 1280)
             embFeatObj.model_esm, embFeatObj.alphabet = torch.hub.load("facebookresearch/esm:main", esmModelName)
             embFeatObj.model_esm.to(device)
-            rowLi = [embFeatObj.esmInfer(seq) for seq in seqLi]
+            rowLi = [embFeatObj.esmInfer(seq) for seq in tqdm(seqLi, desc="ESM embedding")]
             del embFeatObj.model_esm
 
         elif methodName == "T5":
@@ -151,7 +152,7 @@ class LLMEmbeddingFeature:
             embFeatObj.model_t5 = T5EncoderModel.from_pretrained(t5ModelName)
             embFeatObj.tokenizer = T5Tokenizer.from_pretrained(t5ModelName, do_lower_case=False)
             embFeatObj.model_t5.to(device)
-            rowLi = [embFeatObj.t5Infer(seq) for seq in seqLi]
+            rowLi = [embFeatObj.t5Infer(seq) for seq in tqdm(seqLi, desc="T5 embedding")]
             del embFeatObj.model_t5
 
         else:
