@@ -22,7 +22,8 @@ class EmbeddingsFeature:
         sequences_Example = [re.sub(r"[UZOB]", "X", sequence) for sequence in sequences_Example]
 
         # 编码序列，设置 max_length 和 truncation 来控制 block size
-        ids = self.tokenizer.batch_encode_plus(
+        # 新版 transformers 移除了 batch_encode_plus 這個公開方法，改用 tokenizer 的 __call__
+        ids = self.tokenizer(
             sequences_Example,
             add_special_tokens=True,
             padding='max_length',  # 填充到 max_length
