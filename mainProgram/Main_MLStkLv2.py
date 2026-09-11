@@ -2,8 +2,11 @@
 # 所有功能開關 (bool)，統一放在檔案最前面方便控制
 disablePlotPopup = True  # 是否禁止彈出圖表視窗
 useVscodeParentPath = True  # 使用pycharm, vscode進行編譯請開啟
-useTrainValMeta = False  # True: 讀取 Lv1 predictOnTrainToo=True 存的 DS_Train+DS_Val Meta-Feature-Matrix（檔名多 _trainval）
-                        # False: 沿用原本只有 DS_Val 的 Meta-Feature-Matrix 當 Lv2 訓練資料
+useTrainValMetaForSort = False  # Boruta 排序依據：True 用 DS_Train+DS_Val 的 Meta-Feature-Matrix 算重要性排序，False 只用 DS_Val
+useTrainValMetaForTrain = False  # 最終 Lv2 訓練資料（dataDecidedFeatureNum 篩出來的 train_F{N}.csv）：
+                                 # True 用 DS_Train+DS_Val，False 只用 DS_Val
+                                 # 兩者互相獨立：可以用 DS_Train+DS_Val 排序找重要 feature，但最終只拿 DS_Val 訓練，反之亦然
+                                 # True 都是讀取 Lv1 predictOnTrainToo=True 存的 Meta-Feature-Matrix（檔名多 _trainval）
 # ======================================================================================================================
 
 import matplotlib
@@ -51,7 +54,7 @@ dataName = 'NeuroP_1'
 normalizeMethodList = ['robust']
 
 borutaMethod = 'XGB'  # Boruta 底層估計器：'XGB' / 'RF' / 'LGB'，跟 main_Feature_v2.py 一致用 XGB
-decidedFeatureNum = 160  # Boruta 排序後，決定拿前幾個 meta-feature 來訓練 Lv2 model
+decidedFeatureNum = 540  # Boruta 排序後，決定拿前幾個 meta-feature 來訓練 Lv2 model
 
 # Lv2 的 base learner 沿用 Lv1 debug 用過的 17 個 model
 modelNameList = ['lightgbm', 'catboost', 'rbfsvm', 'gbc', 'ridge', 'lr', 'lda', 'ada', 'knn', 'nb', 'et', 'rf',
@@ -62,16 +65,29 @@ os.makedirs(mlDataPath, exist_ok=True)
 encodeObj = EncodeAllFeatures()
 
 for normalizeMethod in normalizeMethodList:
-    metaFeatureMatrixSuffix = '_trainval' if useTrainValMeta else ''
-    metaFeatureMatrixPath = mlScorePath + f'Meta-Feature-Matrix_{dataName}_test_{normalizeMethod}{metaFeatureMatrixSuffix}.csv'
-    metaFeatureMatrixDf = pd.read_csv(metaFeatureMatrixPath, index_col=[0])
-    print(f"[{normalizeMethod}] 讀取 Lv1 Meta-Feature-Matrix（{metaFeatureMatrixPath}）：{metaFeatureMatrixDf.shape}")
+    sortMetaSuffix = '_trainval' if useTrainValMetaForSort else ''
+    trainMetaSuffix = '_trainval' if useTrainValMetaForTrain else ''
+
+    sortMetaFeatureMatrixPath = mlScorePath + f'Meta-Feature-Matrix_{dataName}_test_{normalizeMethod}{sortMetaSuffix}.csv'
+    sortMetaFeatureMatrixDf = pd.read_csv(sortMetaFeatureMatrixPath, index_col=[0])
+    print(f"[{normalizeMethod}] 讀取 Lv1 Meta-Feature-Matrix 當 Boruta 排序依據（{sortMetaFeatureMatrixPath}）：{sortMetaFeatureMatrixDf.shape}")
+
+    if trainMetaSuffix == sortMetaSuffix:
+        trainMetaFeatureMatrixDf = sortMetaFeatureMatrixDf
+    else:
+        trainMetaFeatureMatrixPath = mlScorePath + f'Meta-Feature-Matrix_{dataName}_test_{normalizeMethod}{trainMetaSuffix}.csv'
+        trainMetaFeatureMatrixDf = pd.read_csv(trainMetaFeatureMatrixPath, index_col=[0])
+        print(f"[{normalizeMethod}] 讀取 Lv1 Meta-Feature-Matrix 當最終 Lv2 訓練資料（{trainMetaFeatureMatrixPath}）：{trainMetaFeatureMatrixDf.shape}")
+
+    # 排序依據跟最終訓練資料的開關不同時，檔名要能區分開來，避免互相覆蓋
+    metaFeatureMatrixSuffix = sortMetaSuffix if sortMetaSuffix == trainMetaSuffix else \
+        f"_sort{'TrainVal' if useTrainValMetaForSort else 'Val'}_train{'TrainVal' if useTrainValMetaForTrain else 'Val'}"
 
     # 每一欄都是某個 (feature type × model) 的預測機率，全部都要參與 Boruta 排序，沒有需要保護、跳過的欄位
     skipFeatureList = []
     featRankPrefix = mlDataPath + f'Lv2_{dataName}_{normalizeMethod}{metaFeatureMatrixSuffix}_'
     brtObj = encodeObj.dataBoruta(borutaMethod=borutaMethod, runBoruta=True, featRankPath=featRankPrefix,
-                                  trainDf=metaFeatureMatrixDf, skipFeatureList=skipFeatureList)
+                                  trainDf=sortMetaFeatureMatrixDf, skipFeatureList=skipFeatureList)
 
     featRankCsvPath = featRankPrefix + f'Boruta-featureRank-{borutaMethod}.csv'
     print(f"[{normalizeMethod}] Boruta 排序結果（{len(brtObj.feature_sort)} 個 meta-feature）已儲存到 {featRankCsvPath}")
@@ -88,14 +104,17 @@ for normalizeMethod in normalizeMethodList:
 
     # encodeObj.dataEvalFeatureNum(startNum=5, endNum=len(brtObj.feature_sort) + 1, step=5,
     #                              featNumScorePath=featRankPrefix, saveCsvPath=featRankPrefix,
-    #                              trainDf=metaFeatureMatrixDf, indpDf=indpMetaFeatureMatrixDf,
+    #                              trainDf=trainMetaFeatureMatrixDf, indpDf=indpMetaFeatureMatrixDf,
     #                              brtObj=brtObj, foldNum=5, session=None)  # sessionID可修改成任意整數，ex:1,4,10,15...
 
     # dataDecidedFeatureNum 內部是用 saveCsvPath + "/train_F{N}.csv" 存檔，等同把 featRankPrefix 當資料夾用，
     # 所以要先把這個資料夾建出來，不然 to_csv 會因為資料夾不存在而丟 FileNotFoundError
+    # 這裡的 trainDf 用 trainMetaFeatureMatrixDf（由 useTrainValMetaForTrain 決定），跟前面 Boruta 排序依據的
+    # sortMetaFeatureMatrixDf 可能不是同一份資料；欄位名稱（feature type × model）一致，dataDecidedFeatureNum
+    # 只是照 brtObj.feature_sort 的排序，從 trainMetaFeatureMatrixDf 挑出對應欄位
     os.makedirs(featRankPrefix, exist_ok=True)
     encodeObj.dataDecidedFeatureNum(featureNum=decidedFeatureNum, saveCsvPath=featRankPrefix,
-                                    trainDf=metaFeatureMatrixDf, indpDf=indpMetaFeatureMatrixDf,
+                                    trainDf=trainMetaFeatureMatrixDf, indpDf=indpMetaFeatureMatrixDf,
                                     brtObj=brtObj)
 
     # ==================================================================================================================
