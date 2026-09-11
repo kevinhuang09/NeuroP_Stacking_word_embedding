@@ -1,4 +1,37 @@
+# ======================================================================================================================
+# 所有功能開關 (bool)，統一放在檔案最前面方便控制
+disablePlotPopup = True  # 是否禁止彈出圖表視窗
+useVscodeParentPath = True  # 使用pycharm, vscode進行編譯請開啟
+# b_saveFastaSeqCountStat = True  # 是否印出並儲存 fasta 序列數量統計
+# ======================================================================================================================
+
+import matplotlib
+
+def setMatplotlibBackend(disablePopup):
+    """disablePopup=True: 使用Agg backend，禁止彈出圖表視窗；disablePopup=False: 維持預設backend，正常跳出視窗"""
+    if disablePopup:
+        matplotlib.use('Agg')
+
+setMatplotlibBackend(disablePlotPopup)
+
+import sys, os
+
+def setupParentPath(enableVscodeParentPath):
+    """
+    enableVscodeParentPath=True:
+    使用Pycharm, Vscode進行編譯時，把上一層目錄加入sys.path，方便import套件
+    """
+    if enableVscodeParentPath:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        parent = os.path.join(current_dir, "..")
+        sys.path.append(parent)
+
+setupParentPath(useVscodeParentPath)
+
+
 import json
+
+from sklearn.model_selection import train_test_split
 
 from userPackage.Package_Encode import EncodeAllFeatures
 from userPackage.LoadDataset import LoadDataset
@@ -99,15 +132,33 @@ paramPath = "../data/param/"  # 內含檔案: featureTypeDict.pkl, normalize.pkl
 normalizeMethod = 'standard'
 dataName = 'NeuroP_1'
 
+# DataSet載入區（與 Main_FeatureStk.py 相同資料集）
+MainDatasetNegFastaPath = "../data/MainDatasetNeg.fasta"
+MainDatasetPosFastaPath = "../data/MainDatasetPos.fasta"
+DS_IndpNegFastaPath = "../data/DS_IndpNeg.fasta"
+DS_IndpPosFastaPath = "../data/DS_IndpPos.fasta"
+
+splitTestSize = 0.1
+splitRandomState = 42
+
+def splitSeqDict(seqDict, test_size, random_state):
+    keys = list(seqDict.keys())
+    trainKeys, valKeys = train_test_split(keys, test_size=test_size, random_state=random_state)
+    return {k: seqDict[k] for k in trainKeys}, {k: seqDict[k] for k in valKeys}
+
 ldObj = LoadDataset(minSeqLength=5)
-trainNegSeqDict = ldObj.readFasta("../data/HemoPI_1_neg_main80%.fasta")
-trainPosSeqDict = ldObj.readFasta("../data/HemoPI_1_pos_main80%.fasta")
-indpNegSeqDict = ldObj.readFasta("../data/HemoPI_1_neg_val20%.fasta")
-indpPosSeqDict = ldObj.readFasta("../data/HemoPI_1_pos_val20%.fasta")
+MainDatasetNegSeqDict = ldObj.readFasta(MainDatasetNegFastaPath)
+MainDatasetPosSeqDict = ldObj.readFasta(MainDatasetPosFastaPath)
+indpNegSeqDict2 = ldObj.readFasta(DS_IndpNegFastaPath)
+indpPosSeqDict2 = ldObj.readFasta(DS_IndpPosFastaPath)
+
+# 依 9:1 切分為 train / val（neg, pos 各自切分以維持類別比例）
+trainNegSeqDict, indpNegSeqDict = splitSeqDict(MainDatasetNegSeqDict, splitTestSize, splitRandomState)
+trainPosSeqDict, indpPosSeqDict = splitSeqDict(MainDatasetPosSeqDict, splitTestSize, splitRandomState)
 
 trainDataDict = {0: trainNegSeqDict, 1: trainPosSeqDict, -1: None}
 indpDataDict = {0: indpNegSeqDict, 1: indpPosSeqDict, -1: None}
-indpDataDict2 = {0: indpNegSeqDict2, 1: indpPosSeqDict2, -1: None}  # 第二組 indp test data
+indpDataDict2 = {0: indpNegSeqDict2, 1: indpPosSeqDict2, -1: None}  # 第二組 indp test data (DS_Indp，外部獨立測試集)
 
 encodeObj = EncodeAllFeatures()
 
@@ -185,12 +236,14 @@ skipFeatureList = [s for s in filteredTrainNmlzDf.columns if s.__contains__("Mot
 brtObj = encodeObj.dataBoruta(borutaMethod='XGB', runBoruta=True, featRankPath=mlDataPath,
                               trainDf=filteredTrainNmlzDf, skipFeatureList=skipFeatureList)
 
-encodeObj.dataEvalFeatureNum(startNum=50, endNum=510, step=20,
-                             featNumScorePath=mlDataPath, saveCsvPath=mlDataPath,
-                             trainDf=filteredTrainNmlzDf, indpDf=indpNmlzDf1, brtObj=brtObj, foldNum=5, session = None)   #sessionID可修改成任意整數，ex:1,4,10,15...
+featureNumEnd = filteredTrainNmlzDf.shape[1] - 1 - len(skipFeatureList)  # 扣掉 y 欄位與 skip 的 feature，即實際可供 boruta 排序的 feature 數量
+
+# encodeObj.dataEvalFeatureNum(startNum=50, endNum=featureNumEnd, step=20,
+#                              featNumScorePath=mlDataPath, saveCsvPath=mlDataPath,
+#                              trainDf=filteredTrainNmlzDf, indpDf=indpNmlzDf1, brtObj=brtObj, foldNum=5, session = None)   #sessionID可修改成任意整數，ex:1,4,10,15...
 
 
 
-'''encodeObj.dataDecidedFeatureNum(featureNum=390, saveCsvPath=mlDataPath,
+encodeObj.dataDecidedFeatureNum(featureNum=790, saveCsvPath=mlDataPath,
                                 trainDf=filteredTrainNmlzDf, indpDf=indpNmlzDf1,
-                                brtObj=brtObj) '''  # 決定好 feature 數字請開這個
+                                brtObj=brtObj)   # 決定好 feature 數字請開這個
