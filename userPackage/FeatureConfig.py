@@ -95,8 +95,8 @@ centerGDPDict = {"Usage": False, "UseGap": False, "gap_size": -1}  # 若是預�
 llmEmbeddingFeatureDict = {"Usage": True,        # 整個 LLM embedding 類別總開關
                           "modelDirPath": None,   # 快取 csv 路徑前綴，Main script 會依 dataName 動態設定
                           "blockSize": None,      # padding 長度，Main script 會依全部資料集算好後動態設定
-                          "ESM": [False, "esm2_t33_650M_UR50D"],
-                          "T5": [False, "Rostlab/ProstT5"],
+                          "ESM": [True, "esm2_t33_650M_UR50D"],
+                          "T5": [True, "Rostlab/ProstT5"],
                           }
 
 featureDict = {'iFeature': ifeatureDict,
