@@ -6,6 +6,12 @@ tune_model = True  # True: 針對每個 normalizeMethod × feature type × model
 predictOnTrainToo = True  # True: 除了對 DS_Val predict 外，也對 DS_Train predict，兩者 concat 成另一份 Meta-Feature-Matrix
                            # 注意：DS_Train 是 finalize 時模型看過的資料（in-sample），機率會偏樂觀，跟 DS_Val 的
                            # out-of-sample 機率意義不同，只是多存一份組法給 Lv2 比較用，不會取代原本 DS_Val-only 的檔案
+reuseLv1FinalizedModel = True  # True: 若某個 feature type 在 Main_MLStkLv1.py（word embedding 版）已經訓練過（lv1BaseTuneModelPath
+                                # 底下已有存好的 finalized model），直接讀取來 predict，不重新 tune。
+                                # 原因：iFeature/pFeature/ampFeature/ovpFeature/centerGDP 這些 feature type 跟 embedding 無關，
+                                # 兩邊 Main_FeatureStk(_emb).py 算出來的數值理論上完全一樣，重新訓練是浪費時間；
+                                # 只有 Main_MLStkLv1.py 沒有的 feature type（例如 llmEmbeddingFeature.ESM/T5）才會真的重新訓練。
+                                # False 則完全恢復原本行為，所有 feature type 都照 tune_model 開關重新訓練/讀取。
 # ======================================================================================================================
 # 測試用開關：跟 Main_MLStkLv1_debug.py 功能完全相同，只差在把 feature type 與 model 數量都縮小方便快速測試
 testFeatureTypeCount = 99  # 只取 5 個 feature type（兩個 mergedFeature 合併項目一定會被包含在內）
@@ -52,6 +58,7 @@ from MLProcess.Scoring import Scoring
 featureStatPath = '../data/featureStat/'
 mlScorePath = "../data/mlScore_emb/"  # 內含 ml model 預測完並算好分的檔案（測試結果會加上 _test 後綴，跟正式結果分開）
 tuneModelPath = "../data/tuneModel_test_emb/"  # 測試專用資料夾，避免覆蓋 Main_MLStkLv1_debug.py 存的正式 finalized model
+lv1BaseTuneModelPath = "../data/tuneModel_test/"  # Main_MLStkLv1.py 存 finalized model 的資料夾，reuseLv1FinalizedModel=True 時從這裡複用共同 feature type 的訓練結果
 dataName = 'NeuroP_1'
 
 # Main_FeatureStk_emb.py 目前 normalizeMethodList 有 'standard' 跟 'robust'，這裡要跟它保持一致，
@@ -121,15 +128,25 @@ for normalizeMethod in normalizeMethodList:
 
         # 每個 normalizeMethod + featureType 的 model 各自存在獨立資料夾，避免互相覆蓋
         comboSavePath = os.path.join(tuneModelPath, normalizeMethod, typeName.replace('.', '_'))
-        os.makedirs(comboSavePath, exist_ok=True)
+        lv1ComboSavePath = os.path.join(lv1BaseTuneModelPath, normalizeMethod, typeName.replace('.', '_'))
+        # 同名 feature type 在 Main_MLStkLv1.py 已經存過 finalized model 時，直接複用、不重新訓練
+        canReuseLv1 = reuseLv1FinalizedModel and os.path.isdir(lv1ComboSavePath)
+        if canReuseLv1:
+            print(f"[複用Lv1] {normalizeMethod} + {typeName} 在 {lv1ComboSavePath} 已有訓練結果，跳過重新訓練，直接讀取")
+        else:
+            os.makedirs(comboSavePath, exist_ok=True)
 
         pycObj = PycaretWrapper()
-        if tune_model:
+        if tune_model and not canReuseLv1:
             pycObj.doSetup(trainData=subTrainDf, sessionID=42)
 
         for modelName in modelNameList:  # 每個 model 逐一嘗試（feature type × model 一對一訓練）
             try:
-                if tune_model:
+                if canReuseLv1:
+                    # 直接讀取 Main_MLStkLv1.py 已經訓練好的 finalized model，省去重新 tune 的時間
+                    predictModelList = pycObj.doLoadModel(lv1ComboSavePath, fileNameList=[modelName],
+                                                           b_isFinalizedModel=True)
+                elif tune_model:
                     # 進行一對一訓練
                     pycObj.doTuneModel(searchLibrary='optuna', searchAlg='tpe',
                                        includeModelList=[modelName], foldNum=5,
@@ -176,9 +193,9 @@ for normalizeMethod in normalizeMethodList:
                 print(f"[Val分數] {normalizeMethod} + {typeName} + {modelName}: "
                       f"MCC={valScoreDf['mcc'].iloc[0]:.4f}, AUC={valScoreDf['auc'].iloc[0]:.4f}")
             except Exception as e:
-                actionName = '訓練' if tune_model else '讀取/predict'
+                actionName = '複用Lv1讀取/predict' if canReuseLv1 else ('訓練' if tune_model else '讀取/predict')
                 print(f"[跳過] {normalizeMethod} + {typeName} + {modelName} {actionName}失敗: {e}")
-                if tune_model:
+                if tune_model and not canReuseLv1:
                     resultRows.append({'normalizeMethod': normalizeMethod, 'featureType': typeName,
                                        'model': modelName, 'mcc': None, 'error': str(e)})
                 valScoreRows.append({'normalizeMethod': normalizeMethod, 'featureType': typeName,
