@@ -57,7 +57,7 @@ dataName = 'NeuroP_1'
 normalizeMethodList = ['robust']
 
 borutaMethod = 'XGB'  # Boruta 底層估計器：'XGB' / 'RF' / 'LGB'，跟 main_Feature_v2.py 一致用 XGB
-decidedFeatureNum = 540  # Boruta 排序後，決定拿前幾個 meta-feature 來訓練 Lv2 model
+decidedFeatureNum = 70  # Boruta 排序後，決定拿前幾個 meta-feature 來訓練 Lv2 model
 
 # Lv2 的 base learner 沿用 Lv1 debug 用過的 17 個 model
 modelNameList = ['lightgbm', 'catboost', 'rbfsvm', 'gbc', 'ridge', 'lr', 'lda', 'ada', 'knn', 'nb', 'et', 'rf',
@@ -105,10 +105,10 @@ for normalizeMethod in normalizeMethodList:
     indpMetaFeatureMatrixPath = mlScorePath + f'Meta-Feature-Matrix_{dataName}_test_indp_{normalizeMethod}.csv'
     indpMetaFeatureMatrixDf = pd.read_csv(indpMetaFeatureMatrixPath, index_col=[0])
 
-    # encodeObj.dataEvalFeatureNum(startNum=5, endNum=len(brtObj.feature_sort) + 1, step=5,
+    # encodeObj.dataEvalFeatureNum(startNum=20, endNum=400, step=10,
     #                              featNumScorePath=featRankPrefix, saveCsvPath=featRankPrefix,
     #                              trainDf=trainMetaFeatureMatrixDf, indpDf=indpMetaFeatureMatrixDf,
-    #                              brtObj=brtObj, foldNum=5, session=None)  # sessionID可修改成任意整數，ex:1,4,10,15...
+    #                              brtObj=brtObj, foldNum=5, session=42)  # sessionID可修改成任意整數，ex:1,4,10,15...
 
     # dataDecidedFeatureNum 內部是用 saveCsvPath + "/train_F{N}.csv" 存檔，等同把 featRankPrefix 當資料夾用，
     # 所以要先把這個資料夾建出來，不然 to_csv 會因為資料夾不存在而丟 FileNotFoundError
@@ -134,7 +134,7 @@ for normalizeMethod in normalizeMethodList:
     lv2PycObj = PycaretWrapper()
     lv2PycObj.doSetup(trainData=decidedTrainDf, sessionID=42)
     lv2PycObj.doTuneModel(searchLibrary='optuna', searchAlg='tpe', includeModelList=modelNameList, foldNum=5,
-                         n_iter=10, early_stopping=False, customGridDict=None)
+                         n_iter=100, early_stopping=False, customGridDict=None)
 
     lv2TuneSavePath = os.path.join(tuneModelPath, 'Lv2', normalizeMethod + metaFeatureMatrixSuffix)
     os.makedirs(lv2TuneSavePath, exist_ok=True)
