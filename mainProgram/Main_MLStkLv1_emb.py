@@ -63,7 +63,7 @@ dataName = 'NeuroP_1'
 
 # Main_FeatureStk_emb.py 目前 normalizeMethodList 有 'standard' 跟 'robust'，這裡要跟它保持一致，
 # 否則會去讀一個 Main_FeatureStk_emb.py 根本沒產生的 featureType_csv_{dataName}_{normalizeMethod}_filtered 資料夾
-normalizeMethodList = ['robust']
+normalizeMethodList = ['standard']
 
 modelNameList = ['lightgbm', 'catboost', 'rbfsvm', 'gbc', 'ridge', 'lr', 'lda', 'ada', 'knn', 'nb', 'et', 'rf',
                  'xgboost', 'mlp', 'dt', 'svm', 'qda']

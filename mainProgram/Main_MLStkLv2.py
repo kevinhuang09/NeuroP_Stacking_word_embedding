@@ -102,7 +102,7 @@ for normalizeMethod in normalizeMethodList:
     indpMetaFeatureMatrixPath = mlScorePath + f'Meta-Feature-Matrix_{dataName}_test_indp_{normalizeMethod}.csv'
     indpMetaFeatureMatrixDf = pd.read_csv(indpMetaFeatureMatrixPath, index_col=[0])
 
-    # encodeObj.dataEvalFeatureNum(startNum=5, endNum=len(brtObj.feature_sort) + 1, step=5,
+    # encodeObj.dataEvalFeatureNum(startNum=20, endNum=400, step=10,
     #                              featNumScorePath=featRankPrefix, saveCsvPath=featRankPrefix,
     #                              trainDf=trainMetaFeatureMatrixDf, indpDf=indpMetaFeatureMatrixDf,
     #                              brtObj=brtObj, foldNum=5, session=None)  # sessionID可修改成任意整數，ex:1,4,10,15...
