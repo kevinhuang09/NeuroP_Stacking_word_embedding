@@ -42,8 +42,12 @@ llmEmbeddingDict = {
     "Usage": True,
     "modelDirPath": paramPath + f'{dataName}_llmEmbedding',  # 要跟 FeatureConfig.py 動態設定的值一致
     "blockSize": blockSize,
-    "ESM": [True, "esm2_t33_650M_UR50D"],
-    "T5": [True, "Rostlab/ProstT5"],
+    # key 須跟 FeatureConfig.py 的 llmEmbeddingFeatureDict 保持一致，快取檔名才會對得上；
+    # 這裡全部開啟（True）先把要用到的模型都算好快取，之後在 FeatureConfig.py 裡開關哪些模型都不用重算
+    "ESM_650M": [True, "esm2_t33_650M_UR50D"],
+    "ESM_3B": [True, "esm2_t36_3B_UR50D"],
+    "T5_ProstT5": [True, "Rostlab/ProstT5"],
+    "T5_XL_UniRef50": [True, "Rostlab/prot_t5_xl_uniref50"],
 }
 
 print(f"共 {len(allSeqDict)} 條序列（含重複）需要計算 embedding，blockSize={blockSize}")

@@ -25,10 +25,13 @@ class LLMEmbeddingFeature:
 
     llmEmbeddingDict 的格式：
         "Usage"        : 整個 llmEmbeddingFeature type 的總開關；False 時不論底下各方法開關為何都不會執行
-        "ESM"          : [開關, esmModel名稱]，例如
-                          "esm2_t33_650M_UR50D"(輸出1280維) 或 "esm2_t36_3B_UR50D"(輸出2560維)
-        "T5"           : [開關, t5Model名稱]，例如
-                          "Rostlab/ProstT5"(輸出1024維) 或 "Rostlab/prot_t5_xl_uniref50"(輸出1024維)
+        "ESM_xxx"      : [開關, esmModel名稱]，key 開頭須為 "ESM"，例如
+                          "esm2_t33_650M_UR50D"(輸出1280維) 或 "esm2_t36_3B_UR50D"(輸出2560維)；
+                          可以同時放多個 "ESM_xxx" key（如 "ESM_650M"、"ESM_3B"）各自獨立開關，
+                          各自視為一個獨立的 feature type，互不覆蓋。
+        "T5_xxx"       : [開關, t5Model名稱]，key 開頭須為 "T5"，例如
+                          "Rostlab/ProstT5"(輸出1024維) 或 "Rostlab/prot_t5_xl_uniref50"(輸出1024維)；
+                          同樣可以同時放多個 "T5_xxx" key 各自獨立開關。
         "modelDirPath" : embedding 快取 csv 存放路徑前綴(字串)，組出
                           f'{modelDirPath}_{methodName小寫}_cache.csv'，須在 Main 程式依 dataName 動態設定；
                           若為 None，則每次都重新用模型計算、不存檔快取(不建議，序列一多會很慢)。
@@ -43,7 +46,11 @@ class LLMEmbeddingFeature:
         "esm2_t33_650M_UR50D": 1280,
         "esm2_t36_3B_UR50D": 2560,
     }
-    _T5_MODEL_DIM_DEFAULT = 1024
+    _T5_MODEL_DIM = {
+        "Rostlab/ProstT5": 1024,
+        "Rostlab/prot_t5_xl_uniref50": 1024,
+    }
+    _T5_MODEL_DIM_DEFAULT = 1024  # 新模型忘記加進 _T5_MODEL_DIM 時的保底值
     _NON_METHOD_KEY_TUPLE = ("modelDirPath", "Usage", "blockSize")
 
     def __init__(self, seqDict, llmEmbeddingDict):
@@ -137,26 +144,27 @@ class LLMEmbeddingFeature:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         embFeatObj = EmbeddingsFeature(blockSize)
 
-        if methodName == "ESM":
+        # key 開頭 "ESM"/"T5" 判斷要用哪個模型架構推論，同一族可以有多個不同模型名稱的 key（如 "ESM_650M"、"ESM_3B"）
+        if methodName.startswith("ESM"):
             _, esmModelName = paramLi
             dim = cls._ESM_MODEL_DIM.get(esmModelName, 1280)
             embFeatObj.model_esm, embFeatObj.alphabet = torch.hub.load("facebookresearch/esm:main", esmModelName)
             embFeatObj.model_esm.to(device)
-            rowLi = [embFeatObj.esmInfer(seq) for seq in tqdm(seqLi, desc="ESM embedding")]
+            rowLi = [embFeatObj.esmInfer(seq) for seq in tqdm(seqLi, desc=f"{methodName} embedding")]
             del embFeatObj.model_esm
 
-        elif methodName == "T5":
+        elif methodName.startswith("T5"):
             from transformers import T5Tokenizer, T5EncoderModel
             _, t5ModelName = paramLi
-            dim = cls._T5_MODEL_DIM_DEFAULT
+            dim = cls._T5_MODEL_DIM.get(t5ModelName, cls._T5_MODEL_DIM_DEFAULT)
             embFeatObj.model_t5 = T5EncoderModel.from_pretrained(t5ModelName)
             embFeatObj.tokenizer = T5Tokenizer.from_pretrained(t5ModelName, do_lower_case=False)
             embFeatObj.model_t5.to(device)
-            rowLi = [embFeatObj.t5Infer(seq) for seq in tqdm(seqLi, desc="T5 embedding")]
+            rowLi = [embFeatObj.t5Infer(seq) for seq in tqdm(seqLi, desc=f"{methodName} embedding")]
             del embFeatObj.model_t5
 
         else:
-            raise ValueError(f"未知的 LLM embedding 方法 '{methodName}'")
+            raise ValueError(f"未知的 LLM embedding 方法 '{methodName}'，key 開頭須為 'ESM' 或 'T5'")
 
         gc.collect()
         torch.cuda.empty_cache()
