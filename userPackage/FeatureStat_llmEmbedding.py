@@ -32,6 +32,10 @@ class LLMEmbeddingFeature:
         "T5_xxx"       : [開關, t5Model名稱]，key 開頭須為 "T5"，例如
                           "Rostlab/ProstT5"(輸出1024維) 或 "Rostlab/prot_t5_xl_uniref50"(輸出1024維)；
                           同樣可以同時放多個 "T5_xxx" key 各自獨立開關。
+        "Ankh_xxx"     : [開關, ankhModel名稱]，key 開頭須為 "Ankh"，例如
+                          "ElnaggarLab/ankh-base"(輸出768維) 或 "ElnaggarLab/ankh-large"(輸出1536維)；
+                          Ankh 底層架構同為 T5EncoderModel + T5Tokenizer，因此沿用跟 T5 相同的推論邏輯；
+                          同樣可以同時放多個 "Ankh_xxx" key 各自獨立開關。
         "modelDirPath" : embedding 快取 csv 存放路徑前綴(字串)，組出
                           f'{modelDirPath}_{methodName小寫}_cache.csv'，須在 Main 程式依 dataName 動態設定；
                           若為 None，則每次都重新用模型計算、不存檔快取(不建議，序列一多會很慢)。
@@ -51,6 +55,11 @@ class LLMEmbeddingFeature:
         "Rostlab/prot_t5_xl_uniref50": 1024,
     }
     _T5_MODEL_DIM_DEFAULT = 1024  # 新模型忘記加進 _T5_MODEL_DIM 時的保底值
+    _ANKH_MODEL_DIM = {
+        "ElnaggarLab/ankh-base": 768,
+        "ElnaggarLab/ankh-large": 1536,
+    }
+    _ANKH_MODEL_DIM_DEFAULT = 1536  # 新模型忘記加進 _ANKH_MODEL_DIM 時的保底值
     _NON_METHOD_KEY_TUPLE = ("modelDirPath", "Usage", "blockSize")
 
     def __init__(self, seqDict, llmEmbeddingDict):
@@ -163,8 +172,19 @@ class LLMEmbeddingFeature:
             rowLi = [embFeatObj.t5Infer(seq) for seq in tqdm(seqLi, desc=f"{methodName} embedding")]
             del embFeatObj.model_t5
 
+        elif methodName.startswith("Ankh"):
+            # Ankh 底層架構同為 T5EncoderModel + T5Tokenizer，因此借用 t5Infer 的推論流程
+            from transformers import T5Tokenizer, T5EncoderModel
+            _, ankhModelName = paramLi
+            dim = cls._ANKH_MODEL_DIM.get(ankhModelName, cls._ANKH_MODEL_DIM_DEFAULT)
+            embFeatObj.model_t5 = T5EncoderModel.from_pretrained(ankhModelName)
+            embFeatObj.tokenizer = T5Tokenizer.from_pretrained(ankhModelName, do_lower_case=False)
+            embFeatObj.model_t5.to(device)
+            rowLi = [embFeatObj.t5Infer(seq) for seq in tqdm(seqLi, desc=f"{methodName} embedding")]
+            del embFeatObj.model_t5
+
         else:
-            raise ValueError(f"未知的 LLM embedding 方法 '{methodName}'，key 開頭須為 'ESM' 或 'T5'")
+            raise ValueError(f"未知的 LLM embedding 方法 '{methodName}'，key 開頭須為 'ESM'、'T5' 或 'Ankh'")
 
         gc.collect()
         torch.cuda.empty_cache()
