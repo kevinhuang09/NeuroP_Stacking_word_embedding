@@ -21,14 +21,14 @@ class EmbeddingsFeature:
         # 将序列中的 [UZOB] 替换为 X
         sequences_Example = [re.sub(r"[UZOB]", "X", sequence) for sequence in sequences_Example]
 
-        # 编码序列，设置 max_length 和 truncation 来控制 block size
         # 新版 transformers 移除了 batch_encode_plus 這個公開方法，改用 tokenizer 的 __call__
+        # 不再 padding/truncate 到 self.block_size，讓每條序列依照自己實際長度做 tokenize，
+        # 只保留一個很寬鬆的安全上限，避免異常長序列造成記憶體爆炸
         ids = self.tokenizer(
             sequences_Example,
             add_special_tokens=True,
-            padding='max_length',  # 填充到 max_length
-            truncation=True,  # 超过 max_length 的部分将被截断
-            max_length=self.block_size  # 设置 block size
+            truncation=True,
+            max_length=1024
         )
 
         # 转移到 GPU
@@ -72,17 +72,10 @@ class EmbeddingsFeature:
         # 將模型轉換為 FP16
         self.model_esm.to(device).to(torch.float16)
 
-        # 確保 batch_tokens 不會超過指定的 block_size
-        if batch_tokens.size(1) > self.block_size:
-            batch_tokens = batch_tokens[:, :self.block_size]  # 截斷過長的序列
-        else:
-            # 填充較短的序列，使其長度達到 block_size
-            padding = torch.full((batch_tokens.size(0), self.block_size - batch_tokens.size(1)),
-                                 self.alphabet.padding_idx, dtype=torch.long).to(device)  # ⚠️ 必須是 long
-            batch_tokens = torch.cat((batch_tokens, padding), dim=1)
-
-        # 確保沒有超過 block_size 的 token
-        batch_lens = (batch_tokens != self.alphabet.padding_idx).sum(1)
+        # 不再 padding/truncate 到 self.block_size，讓每條序列依照自己實際長度推論；
+        # 只保留一個很寬鬆的安全上限，避免異常長序列造成記憶體爆炸
+        if batch_tokens.size(1) > 1024:
+            batch_tokens = batch_tokens[:, :1024]
 
         with torch.no_grad():
             # 🔥 在 GPU 上執行 FP16 推理，但 batch_tokens 保持 int64（long）
