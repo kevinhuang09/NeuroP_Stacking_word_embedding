@@ -1,6 +1,6 @@
 """
 在裝有 torch(且支援 RTX 5090 / sm_120)的新環境下執行，
-先把 ESM / T5 的 embedding 算好、寫進快取 csv。
+先把 ESM / T5 / Ankh 的 embedding 算好、寫進快取 csv。
 
 跑完這支程式後，Main_FeatureStk_emb.py 在舊的 Python 3.8 環境執行時，
 所有序列都能直接命中快取，完全不會 import torch，也就不會再撞到
@@ -48,8 +48,10 @@ llmEmbeddingDict = {
     "ESM_3B": [True, "esm2_t36_3B_UR50D"],
     "T5_ProstT5": [True, "Rostlab/ProstT5"],
     "T5_XL_UniRef50": [True, "Rostlab/prot_t5_xl_uniref50"],
+    "Ankh_Base": [True, "ElnaggarLab/ankh-base"],
+    "Ankh_Large": [True, "ElnaggarLab/ankh-large"],
 }
 
 print(f"共 {len(allSeqDict)} 條序列（含重複）需要計算 embedding，blockSize={blockSize}")
 LLMEmbeddingFeature(allSeqDict, llmEmbeddingDict)
-print("ESM/T5 embedding 快取已計算完成，可以切回 Python 3.8 環境執行 Main_FeatureStk_emb.py 了")
+print("ESM/T5/Ankh embedding 快取已計算完成，可以切回 Python 3.8 環境執行 Main_FeatureStk_emb.py 了")

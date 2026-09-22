@@ -89,11 +89,13 @@ centerGDPDict = {"Usage": False, "UseGap": False, "gap_size": -1}  # 若是預�
 #   - 每一個 "ESM_xxx" / "T5_xxx" key 各自代表一個獨立模型，格式為 [開關, 模型名稱]，
 #        可以同時開啟多個 ESM 和/或多個 T5 模型，各自會被當成獨立的 feature type
 #        （欄位、embedding 快取 csv 都各自分開，互不覆蓋）。
-#        key 的開頭必須是 "ESM" 或 "T5"（FeatureStat_llmEmbedding.py 依此判斷要呼叫哪個模型架構去推論），
+#        key 的開頭必須是 "ESM"、"T5" 或 "Ankh"（FeatureStat_llmEmbedding.py 依此判斷要呼叫哪個模型架構去推論），
 #        後面接的字串可自訂，只是用來識別／區分同族的不同模型。
 #        目前可用的模型名稱：
-#        ESM: "esm2_t33_650M_UR50D"（1280維） 或 "esm2_t36_3B_UR50D"（2560維）
-#        T5:  "Rostlab/ProstT5" 或 "Rostlab/prot_t5_xl_uniref50"（皆為1024維）
+#        ESM:  "esm2_t33_650M_UR50D"（1280維） 或 "esm2_t36_3B_UR50D"（2560維）
+#        T5:   "Rostlab/ProstT5" 或 "Rostlab/prot_t5_xl_uniref50"（皆為1024維）
+#        Ankh: "ElnaggarLab/ankh-base"（768維） 或 "ElnaggarLab/ankh-large"（1536維）
+#              （Ankh 底層架構同為 T5EncoderModel + T5Tokenizer，因此沿用 T5 的推論流程）
 #   - "readFromCSV": 是否讀取已存好的 embedding csv 快取，而非重新用模型計算
 #        （對應 v3 的 b_readEsmEmbFromCSV / b_readT5EmbFromCSV，這裡合併成單一開關統一控制）
 llmEmbeddingFeatureDict = {"Usage": True,        # 整個 LLM embedding 類別總開關
@@ -103,6 +105,8 @@ llmEmbeddingFeatureDict = {"Usage": True,        # 整個 LLM embedding 類別�
                           "ESM_3B": [True, "esm2_t36_3B_UR50D"],
                           "T5_ProstT5": [True, "Rostlab/ProstT5"],
                           "T5_XL_UniRef50": [True, "Rostlab/prot_t5_xl_uniref50"],
+                          "Ankh_Base": [True, "ElnaggarLab/ankh-base"],
+                          "Ankh_Large": [True, "ElnaggarLab/ankh-large"],
                           }
 
 featureDict = {'iFeature': ifeatureDict,
