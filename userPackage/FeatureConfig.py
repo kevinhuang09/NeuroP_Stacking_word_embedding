@@ -86,17 +86,23 @@ centerGDPDict = {"Usage": False, "UseGap": False, "gap_size": -1}  # 若是預�
 #   - "Usage": 整個 LLM embedding 類別的總開關。關掉時，底下每個方法即使開著也不會真的產生欄位。
 #   - "modelDirPath": embedding 快取 csv 存放路徑前綴（對應 v3 的 tranEsmNmlzCsvPath / trainT5NmlzCsvPath），
 #        會被 Main script 動態覆寫成含 dataName 的路徑，此處的值只是保底用。
-#   - "ESM": [開關, 模型名稱]。模型名稱對應 v3 的 esmModel，例如
-#        "esm2_t33_650M_UR50D"（1280維） 或 "esm2_t36_3B_UR50D"（2560維）
-#   - "T5":  [開關, 模型名稱]。模型名稱對應 v3 的 t5Model，例如
-#        "Rostlab/ProstT5" 或 "Rostlab/prot_t5_xl_uniref50"（皆為1024維）
+#   - 每一個 "ESM_xxx" / "T5_xxx" key 各自代表一個獨立模型，格式為 [開關, 模型名稱]，
+#        可以同時開啟多個 ESM 和/或多個 T5 模型，各自會被當成獨立的 feature type
+#        （欄位、embedding 快取 csv 都各自分開，互不覆蓋）。
+#        key 的開頭必須是 "ESM" 或 "T5"（FeatureStat_llmEmbedding.py 依此判斷要呼叫哪個模型架構去推論），
+#        後面接的字串可自訂，只是用來識別／區分同族的不同模型。
+#        目前可用的模型名稱：
+#        ESM: "esm2_t33_650M_UR50D"（1280維） 或 "esm2_t36_3B_UR50D"（2560維）
+#        T5:  "Rostlab/ProstT5" 或 "Rostlab/prot_t5_xl_uniref50"（皆為1024維）
 #   - "readFromCSV": 是否讀取已存好的 embedding csv 快取，而非重新用模型計算
 #        （對應 v3 的 b_readEsmEmbFromCSV / b_readT5EmbFromCSV，這裡合併成單一開關統一控制）
 llmEmbeddingFeatureDict = {"Usage": True,        # 整個 LLM embedding 類別總開關
                           "modelDirPath": None,   # 快取 csv 路徑前綴，Main script 會依 dataName 動態設定
                           "blockSize": None,      # padding 長度，Main script 會依全部資料集算好後動態設定
-                          "ESM": [True, "esm2_t33_650M_UR50D"],
-                          "T5": [True, "Rostlab/ProstT5"],
+                          "ESM_650M": [True, "esm2_t33_650M_UR50D"],
+                          "ESM_3B": [True, "esm2_t36_3B_UR50D"],
+                          "T5_ProstT5": [True, "Rostlab/ProstT5"],
+                          "T5_XL_UniRef50": [True, "Rostlab/prot_t5_xl_uniref50"],
                           }
 
 featureDict = {'iFeature': ifeatureDict,
