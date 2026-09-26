@@ -36,6 +36,11 @@ class LLMEmbeddingFeature:
                           "ElnaggarLab/ankh-base"(輸出768維) 或 "ElnaggarLab/ankh-large"(輸出1536維)；
                           Ankh 底層架構同為 T5EncoderModel + T5Tokenizer，因此沿用跟 T5 相同的推論邏輯；
                           同樣可以同時放多個 "Ankh_xxx" key 各自獨立開關。
+        "Bert_xxx"     : [開關, bertModel名稱]，key 開頭須為 "Bert"，例如
+                          "Rostlab/prot_bert"(輸出1024維) 或 "Rostlab/prot_bert_bfd"(輸出1024維)；
+                          底層架構為 BertModel + BertTokenizer(ProtTrans 系列，非 T5 encoder)，
+                          序列前後會各多一個 [CLS]/[SEP] 特殊token，推論時頭尾都要去掉(見 bertInfer)；
+                          同樣可以同時放多個 "Bert_xxx" key 各自獨立開關。
         "modelDirPath" : embedding 快取 csv 存放路徑前綴(字串)，組出
                           f'{modelDirPath}_{methodName小寫}_cache.csv'，須在 Main 程式依 dataName 動態設定；
                           若為 None，則每次都重新用模型計算、不存檔快取(不建議，序列一多會很慢)。
@@ -47,19 +52,39 @@ class LLMEmbeddingFeature:
     """
 
     _ESM_MODEL_DIM = {
+        "esm2_t6_8M_UR50D": 320,
+        "esm2_t12_35M_UR50D": 480,
+        "esm2_t30_150M_UR50D": 640,
         "esm2_t33_650M_UR50D": 1280,
         "esm2_t36_3B_UR50D": 2560,
+        "esm2_t48_15B_UR50D": 5120,
+        "esm1b_t33_650M_UR50S": 1280,
+        "esm1v_t33_650M_UR90S_1": 1280,
+        "esm1v_t33_650M_UR90S_2": 1280,
+        "esm1v_t33_650M_UR90S_3": 1280,
+        "esm1v_t33_650M_UR90S_4": 1280,
+        "esm1v_t33_650M_UR90S_5": 1280,
     }
     _T5_MODEL_DIM = {
         "Rostlab/ProstT5": 1024,
         "Rostlab/prot_t5_xl_uniref50": 1024,
+        "Rostlab/prot_t5_xl_bfd": 1024,
+        "Rostlab/prot_t5_xxl_uniref50": 1024,
+        "Rostlab/prot_t5_xxl_bfd": 1024,
+        "Rostlab/prot_t5_base_mt_uniref50": 768,
     }
     _T5_MODEL_DIM_DEFAULT = 1024  # 新模型忘記加進 _T5_MODEL_DIM 時的保底值
     _ANKH_MODEL_DIM = {
         "ElnaggarLab/ankh-base": 768,
         "ElnaggarLab/ankh-large": 1536,
+        "ElnaggarLab/ankh2-large": 1536,
     }
     _ANKH_MODEL_DIM_DEFAULT = 1536  # 新模型忘記加進 _ANKH_MODEL_DIM 時的保底值
+    _BERT_MODEL_DIM = {
+        "Rostlab/prot_bert": 1024,
+        "Rostlab/prot_bert_bfd": 1024,
+    }
+    _BERT_MODEL_DIM_DEFAULT = 1024  # 新模型忘記加進 _BERT_MODEL_DIM 時的保底值
     _NON_METHOD_KEY_TUPLE = ("modelDirPath", "Usage", "blockSize")
 
     def __init__(self, seqDict, llmEmbeddingDict):
@@ -183,8 +208,19 @@ class LLMEmbeddingFeature:
             rowLi = [embFeatObj.t5Infer(seq) for seq in tqdm(seqLi, desc=f"{methodName} embedding")]
             del embFeatObj.model_t5
 
+        elif methodName.startswith("Bert"):
+            # ProtTrans 系列的 ProtBert：BertModel + BertTokenizer，跟 T5 系列不同要多去掉開頭 [CLS]，見 bertInfer
+            from transformers import BertTokenizer, BertModel
+            _, bertModelName = paramLi
+            dim = cls._BERT_MODEL_DIM.get(bertModelName, cls._BERT_MODEL_DIM_DEFAULT)
+            embFeatObj.model_bert = BertModel.from_pretrained(bertModelName)
+            embFeatObj.tokenizer = BertTokenizer.from_pretrained(bertModelName, do_lower_case=False)
+            embFeatObj.model_bert.to(device)
+            rowLi = [embFeatObj.bertInfer(seq) for seq in tqdm(seqLi, desc=f"{methodName} embedding")]
+            del embFeatObj.model_bert
+
         else:
-            raise ValueError(f"未知的 LLM embedding 方法 '{methodName}'，key 開頭須為 'ESM'、'T5' 或 'Ankh'")
+            raise ValueError(f"未知的 LLM embedding 方法 '{methodName}'，key 開頭須為 'ESM'、'T5'、'Ankh' 或 'Bert'")
 
         gc.collect()
         torch.cuda.empty_cache()
