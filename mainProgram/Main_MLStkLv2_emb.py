@@ -57,7 +57,7 @@ dataName = 'NeuroP_1'
 normalizeMethodList = ['robust']
 
 borutaMethod = 'XGB'  # Boruta 底層估計器：'XGB' / 'RF' / 'LGB'，跟 main_Feature_v2.py 一致用 XGB
-decidedFeatureNum = 70  # Boruta 排序後，決定拿前幾個 meta-feature 來訓練 Lv2 model
+decidedFeatureNum = 60  #120 Boruta 排序後，決定拿前幾個 meta-feature 來訓練 Lv2 model
 
 # Lv2 的 base learner 沿用 Lv1 debug 用過的 17 個 model
 modelNameList = ['lightgbm', 'catboost', 'rbfsvm', 'gbc', 'ridge', 'lr', 'lda', 'ada', 'knn', 'nb', 'et', 'rf',

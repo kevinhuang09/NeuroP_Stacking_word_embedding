@@ -8,6 +8,38 @@ class EmbeddingsFeature:
     def __init__(self, block_size):
         self.block_size = block_size
 
+    def bertInfer(self, seq):
+        '''
+        ProtBert 系列(BertModel)為每條序列生成的 embeddings 特徵，回傳為 dataframe
+        跟 t5Infer 的差異：BertTokenizer 會在序列前後各加一個 [CLS]/[SEP] 特殊 token，
+        所以頭尾都要去掉(T5 只在尾端加一個 EOS，只需去掉尾端)
+        :param seq: peptide序列
+        :return: dataframe內涵embeddings
+        '''
+        sequences_Example = [" ".join(list(seq))]
+        sequences_Example = [re.sub(r"[UZOB]", "X", sequence) for sequence in sequences_Example]
+
+        ids = self.tokenizer(
+            sequences_Example,
+            add_special_tokens=True,
+            truncation=True,
+            max_length=1024
+        )
+
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        input_ids = torch.tensor(ids['input_ids']).to(device)
+        attention_mask = torch.tensor(ids['attention_mask']).to(device)
+
+        self.model_bert.to(device)
+
+        with torch.no_grad():
+            embedding = self.model_bert(input_ids=input_ids, attention_mask=attention_mask)
+
+        # 去掉開頭 [CLS] 和結尾 [SEP] 兩個特殊 token
+        encoder_embedding = embedding.last_hidden_state[0, 1:-1].detach().cpu()
+        encoder_embedding = np.array(encoder_embedding.tolist())
+        return encoder_embedding.sum(axis=0)
+
     def t5Infer(self, seq):
         '''
         T5為每條序列生成的1x1024的embeddings特徵 回傳為dataframe
