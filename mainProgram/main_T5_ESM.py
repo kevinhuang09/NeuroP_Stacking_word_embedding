@@ -109,12 +109,16 @@ class EmbeddingsFeature:
         if batch_tokens.size(1) > 1024:
             batch_tokens = batch_tokens[:, :1024]
 
+        # 不同 ESM 模型大小的層數不同(ex: t6=6層、t30=30層、t33=33層、t36=36層)，
+        # 一律取模型本身最後一層(num_layers)，不能寫死 33，否則層數不足的小模型會 KeyError，
+        # 層數更多的大模型(如 t36_3B)也會悄悄拿到錯誤的中間層而非最終層
+        lastLayer = self.model_esm.num_layers
         with torch.no_grad():
             # 🔥 在 GPU 上執行 FP16 推理，但 batch_tokens 保持 int64（long）
-            results = self.model_esm(batch_tokens, repr_layers=[33], return_contacts=True)
+            results = self.model_esm(batch_tokens, repr_layers=[lastLayer], return_contacts=True)
 
-        # 提取第 33 層的 token 表示
-        token_representations = results["representations"][33]
+        # 提取最後一層的 token 表示
+        token_representations = results["representations"][lastLayer]
 
         # 確保數據回到 CPU 並轉回 FP32，以便 NumPy 處理
         tensor_data = token_representations.detach().cpu().to(torch.float32)

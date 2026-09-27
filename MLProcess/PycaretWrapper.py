@@ -135,6 +135,18 @@ class PycaretWrapper:
                 savePath = os.path.join(path, modelName+'_tuned')
                 save_model(tuneModel, savePath)
 
+    @staticmethod
+    def doSaveModelByName(model, modelName, path, b_isFinalizedModel=True):
+        """
+        儲存單一個已經 tune/finalize 好的 model 物件，不依賴 self.finalModelList/self.tunedModelList 目前的狀態。
+        給像 Main_MLStkLv2_emb_best.py 這種要跑多次(tune_try)、每次都會產生一整批新模型、
+        但最後只想留下其中單一一個最佳結果的情境使用：呼叫端自行在迴圈裡保留想要的 model 物件，
+        迴圈結束後再呼叫這個 staticmethod 存檔即可，不用整批 17 個 model 都存下來。
+        """
+        suffix = '_final' if b_isFinalizedModel else '_tuned'
+        savePath = os.path.join(path, modelName + suffix)
+        save_model(model, savePath)
+
     def doLoadModel(self, path, fileNameList=None, b_isFinalizedModel=True):
         """
 
