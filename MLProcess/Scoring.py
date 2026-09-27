@@ -60,7 +60,10 @@ class Scoring:
                          "mcc": matthews_corrcoef(self.answerDf, predVector),
                          "bestCutoff": bestCutOff}
             scoreList.append(scoreDict)
-        scoreDf = pd.DataFrame(scoreList, index=[self.modelNameList])
+        # 注意：這裡不能寫成 index=[self.modelNameList]（多包一層 list），
+        # 那樣 pandas 會把它解讀成用來組 MultiIndex 的陣列清單，導致每個 model 名稱都變成 1-tuple
+        # (例如 ('lightgbm',) 而不是 'lightgbm')，下游任何拿 index 值去跟純字串 model 名稱比對的地方都會對不上。
+        scoreDf = pd.DataFrame(scoreList, index=self.modelNameList)
         if sortColumn is not None:
             scoreDf = scoreDf.sort_values(by=sortColumn, ascending=False)
         if path is not None:
