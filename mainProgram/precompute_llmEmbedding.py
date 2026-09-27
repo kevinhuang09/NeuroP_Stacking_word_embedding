@@ -49,8 +49,8 @@ llmEmbeddingDict = {
     "ESM_8M": [True, "esm2_t6_8M_UR50D"],
     "ESM_35M": [True, "esm2_t12_35M_UR50D"],
     "ESM_150M": [True, "esm2_t30_150M_UR50D"],
-    "ESM_15B": [True, "esm2_t48_15B_UR50D"],
-    "ESM_1b": [True, "esm1b_t33_650M_UR50S"],
+    "ESM_15B": [False, "esm2_t48_15B_UR50D"],  # 55GB+ 權重檔+需30GB+ VRAM，目前網路環境下載不穩，先關閉
+    "ESM_1b": [False, "esm1b_t33_650M_UR50S"],
     "ESM_1v_1": [True, "esm1v_t33_650M_UR90S_1"],
     "ESM_1v_2": [True, "esm1v_t33_650M_UR90S_2"],
     "ESM_1v_3": [True, "esm1v_t33_650M_UR90S_3"],
