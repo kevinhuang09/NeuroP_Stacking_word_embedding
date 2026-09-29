@@ -40,6 +40,26 @@ class EmbeddingsFeature:
         encoder_embedding = np.array(encoder_embedding.tolist())
         return encoder_embedding.sum(axis=0)
 
+    def proteinglmInfer(self, seq):
+        '''
+        ProteinGLM(GLM架構)為每條序列生成的embeddings特徵，回傳為dataframe
+        :param seq: peptide序列
+        :return: dataframe內涵embeddings
+        '''
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        ids = self.tokenizer(seq, return_tensors="pt", truncation=True, max_length=1024)
+        ids = {k: v.to(device) for k, v in ids.items()}
+
+        self.model_glm.to(device)
+
+        with torch.no_grad():
+            output = self.model_glm(**ids, output_hidden_states=True)
+
+        encoder_embedding = output.hidden_states[-1][0].detach().cpu()
+        encoder_embedding = np.array(encoder_embedding.tolist())
+        return encoder_embedding.sum(axis=0)
+
     def t5Infer(self, seq):
         '''
         T5為每條序列生成的1x1024的embeddings特徵 回傳為dataframe

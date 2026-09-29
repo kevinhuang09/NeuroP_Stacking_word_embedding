@@ -89,7 +89,7 @@ centerGDPDict = {"Usage": False, "UseGap": False, "gap_size": -1}  # 若是預�
 #   - 每一個 "ESM_xxx" / "T5_xxx" key 各自代表一個獨立模型，格式為 [開關, 模型名稱]，
 #        可以同時開啟多個 ESM 和/或多個 T5 模型，各自會被當成獨立的 feature type
 #        （欄位、embedding 快取 csv 都各自分開，互不覆蓋）。
-#        key 的開頭必須是 "ESM"、"T5"、"Ankh" 或 "Bert"（FeatureStat_llmEmbedding.py 依此判斷要呼叫哪個模型架構去推論），
+#        key 的開頭必須是 "ESM"、"T5"、"Ankh"、"Bert" 或 "ProteinGLM"（FeatureStat_llmEmbedding.py 依此判斷要呼叫哪個模型架構去推論），
 #        後面接的字串可自訂，只是用來識別／區分同族的不同模型。
 #        目前可用的模型名稱（Usage/blockSize 之外，新加入的都先設 False，要用再手動開）：
 #        ESM (torch.hub facebookresearch/esm)：
@@ -108,6 +108,8 @@ centerGDPDict = {"Usage": False, "UseGap": False, "gap_size": -1}  # 若是預�
 #           要開啟前請先核對官方文件的實際輸出維度，避免跟保底值 _ANKH_MODEL_DIM_DEFAULT 對不上）
 #        Bert (Rostlab ProtTrans 系列，底層架構為 BertModel + BertTokenizer，跟 T5/Ankh 不同族)：
 #          Rostlab/prot_bert（1024維）、Rostlab/prot_bert_bfd（1024維）
+#        ProteinGLM (BioMap，GLM 架構，需 trust_remote_code=True 才能載入，int4 量化版)：
+#          biomap-research/proteinglm-100b-int4（10240維，100B 參數量化後仍需大量 VRAM，模型很大）
 #   - "readFromCSV": 是否讀取已存好的 embedding csv 快取，而非重新用模型計算
 #        （對應 v3 的 b_readEsmEmbFromCSV / b_readT5EmbFromCSV，這裡合併成單一開關統一控制）
 
@@ -116,32 +118,32 @@ llmEmbeddingFeatureDict = {"Usage": True,        # 整個 LLM embedding 類別�
                           "blockSize": None,      # padding 長度，Main script 會依全部資料集算好後動態設定
                           "ESM_650M": [True, "esm2_t33_650M_UR50D"],
                           "ESM_3B": [True, "esm2_t36_3B_UR50D"],
-                          "ESM_8M": [True, "esm2_t6_8M_UR50D"],
-                          "ESM_35M": [True, "esm2_t12_35M_UR50D"],
-                          "ESM_150M": [True, "esm2_t30_150M_UR50D"],
+                          "ESM_8M": [False, "esm2_t6_8M_UR50D"],
+                          "ESM_35M": [False, "esm2_t12_35M_UR50D"],
+                          "ESM_150M": [False, "esm2_t30_150M_UR50D"],
                           "ESM_15B": [False, "esm2_t48_15B_UR50D"],  # 55GB+ 權重檔+需30GB+ VRAM，目前網路環境下載不穩，先關閉
                           "ESM_1b": [False, "esm1b_t33_650M_UR50S"],
-                          "ESM_1v_1": [True, "esm1v_t33_650M_UR90S_1"],
-                          "ESM_1v_2": [True, "esm1v_t33_650M_UR90S_2"],
-                          "ESM_1v_3": [True, "esm1v_t33_650M_UR90S_3"],
-                          "ESM_1v_4": [True, "esm1v_t33_650M_UR90S_4"],
-                          "ESM_1v_5": [True, "esm1v_t33_650M_UR90S_5"],
+                          "ESM_1v_1": [False, "esm1v_t33_650M_UR90S_1"],
+                          "ESM_1v_2": [False, "esm1v_t33_650M_UR90S_2"],
+                          "ESM_1v_3": [False, "esm1v_t33_650M_UR90S_3"],
+                          "ESM_1v_4": [False, "esm1v_t33_650M_UR90S_4"],
+                          "ESM_1v_5": [False, "esm1v_t33_650M_UR90S_5"],
                           "T5_ProstT5": [True, "Rostlab/ProstT5"],
                           "T5_XL_UniRef50": [True, "Rostlab/prot_t5_xl_uniref50"],
-                          "T5_XL_BFD": [True, "Rostlab/prot_t5_xl_bfd"],
-                          "T5_XXL_UniRef50": [True, "Rostlab/prot_t5_xxl_uniref50"],
-                          "T5_XXL_BFD": [True, "Rostlab/prot_t5_xxl_bfd"],
-                          "T5_Base_MT_UniRef50": [True, "Rostlab/prot_t5_base_mt_uniref50"],
+                          "T5_XL_BFD": [False, "Rostlab/prot_t5_xl_bfd"],
+                          "T5_XXL_UniRef50": [False, "Rostlab/prot_t5_xxl_uniref50"],
+                          "T5_XXL_BFD": [False, "Rostlab/prot_t5_xxl_bfd"],
+                          "T5_Base_MT_UniRef50": [False, "Rostlab/prot_t5_base_mt_uniref50"],
                           "Ankh_Base": [True, "ElnaggarLab/ankh-base"],
                           "Ankh_Large": [True, "ElnaggarLab/ankh-large"],
-                          "Ankh2_Large": [True, "ElnaggarLab/ankh2-large"],
-                          "Ankh2_Ext1": [True, "ElnaggarLab/ankh2-ext1"],
-                          "Ankh2_Ext2": [True, "ElnaggarLab/ankh2-ext2"],
-                          "Ankh3_Large": [True, "ElnaggarLab/ankh3-large"],
-                          "Ankh3_XL": [True, "ElnaggarLab/ankh3-xl"],
-                          "Bert_ProtBert": [True, "Rostlab/prot_bert"],
-                          "Bert_ProtBert_BFD": [True, "Rostlab/prot_bert_bfd"],
-                          "proteinglm-100b-int4": [True, "biomap-research/proteinglm-100b-int4"]
+                          "Ankh2_Large": [False, "ElnaggarLab/ankh2-large"],
+                          "Ankh2_Ext1": [False, "ElnaggarLab/ankh2-ext1"],
+                          "Ankh2_Ext2": [False, "ElnaggarLab/ankh2-ext2"],
+                          "Ankh3_Large": [False, "ElnaggarLab/ankh3-large"],
+                          "Ankh3_XL": [False, "ElnaggarLab/ankh3-xl"],
+                          "Bert_ProtBert": [False, "Rostlab/prot_bert"],
+                          "Bert_ProtBert_BFD": [False, "Rostlab/prot_bert_bfd"],
+                          "ProteinGLM_100B_int4": [True, "biomap-research/proteinglm-100b-int4"],  # 100B int4量化，VRAM需求極高
                           }
 
 featureDict = {'iFeature': ifeatureDict,
