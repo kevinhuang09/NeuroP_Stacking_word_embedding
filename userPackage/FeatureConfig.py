@@ -110,6 +110,7 @@ centerGDPDict = {"Usage": False, "UseGap": False, "gap_size": -1}  # 若是預�
 #          Rostlab/prot_bert（1024維）、Rostlab/prot_bert_bfd（1024維）
 #   - "readFromCSV": 是否讀取已存好的 embedding csv 快取，而非重新用模型計算
 #        （對應 v3 的 b_readEsmEmbFromCSV / b_readT5EmbFromCSV，這裡合併成單一開關統一控制）
+
 llmEmbeddingFeatureDict = {"Usage": True,        # 整個 LLM embedding 類別總開關
                           "modelDirPath": None,   # 快取 csv 路徑前綴，Main script 會依 dataName 動態設定
                           "blockSize": None,      # padding 長度，Main script 會依全部資料集算好後動態設定
@@ -140,6 +141,7 @@ llmEmbeddingFeatureDict = {"Usage": True,        # 整個 LLM embedding 類別�
                           "Ankh3_XL": [True, "ElnaggarLab/ankh3-xl"],
                           "Bert_ProtBert": [True, "Rostlab/prot_bert"],
                           "Bert_ProtBert_BFD": [True, "Rostlab/prot_bert_bfd"],
+                          "proteinglm-100b-int4": [True, "biomap-research/proteinglm-100b-int4"]
                           }
 
 featureDict = {'iFeature': ifeatureDict,
