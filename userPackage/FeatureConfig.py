@@ -143,7 +143,8 @@ llmEmbeddingFeatureDict = {"Usage": True,        # 整個 LLM embedding 類別�
                           "Ankh3_XL": [False, "ElnaggarLab/ankh3-xl"],
                           "Bert_ProtBert": [False, "Rostlab/prot_bert"],
                           "Bert_ProtBert_BFD": [False, "Rostlab/prot_bert_bfd"],
-                          "ProteinGLM_100B_int4": [True, "biomap-research/proteinglm-100b-int4"],  # 100B int4量化，VRAM需求極高
+                          "ProteinGLM_100B_int4": [False, "biomap-research/proteinglm-100b-int4"],  # 100B int4量化，VRAM需求極高
+                          "ProteinGLM_10B_mlm": [True, "proteinglm/proteinglm-10b-mlm"],
                           }
 
 featureDict = {'iFeature': ifeatureDict,

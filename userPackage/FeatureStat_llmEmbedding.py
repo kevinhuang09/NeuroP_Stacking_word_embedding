@@ -94,6 +94,7 @@ class LLMEmbeddingFeature:
 
     _PROTEINGLM_MODEL_DIM = {
         "biomap-research/proteinglm-100b-int4": 10240,
+        "proteinglm/proteinglm-10b-mlm": 4352,
     }
     _PROTEINGLM_MODEL_DIM_DEFAULT = 10240
 
