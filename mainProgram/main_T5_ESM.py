@@ -46,17 +46,21 @@ class EmbeddingsFeature:
         :param seq: peptide序列
         :return: dataframe內涵embeddings
         '''
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        # 模型用 accelerate device_map="auto" 載入，各層可能分散在不同裝置(部分甚至在 CPU)，
+        # 因此輸入要放到「模型輸入層實際所在的裝置」，不能再假設整個模型都在同一個 cuda device 上
+        device = next(self.model_glm.parameters()).device
 
         ids = self.tokenizer(seq, return_tensors="pt", truncation=True, max_length=1024)
         ids = {k: v.to(device) for k, v in ids.items()}
 
-        self.model_glm.to(device)
-
         with torch.no_grad():
             output = self.model_glm(**ids, output_hidden_states=True)
 
-        encoder_embedding = output.hidden_states[-1][0].detach().cpu()
+        # ProteinGLM 內部把 hidden_states 轉成 [seq_len, batch, hidden] 排列(modeling_proteinglm.py
+        # 的 Embedding.forward 註解寫 "[b s h] --> [s b h]")，跟 ESM/T5/Bert 慣用的 batch-first
+        # 不同，因此要用 [:, 0] 取「batch 0、全部序列位置」，不能像其他模型一樣直接用 [0]
+        # (那樣只會取到「序列第 0 個位置、所有 batch」，等於只保留一個 token 的向量)
+        encoder_embedding = output.hidden_states[-1][:, 0].detach().cpu()
         encoder_embedding = np.array(encoder_embedding.tolist())
         return encoder_embedding.sum(axis=0)
 

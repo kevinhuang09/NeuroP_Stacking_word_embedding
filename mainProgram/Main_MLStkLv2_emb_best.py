@@ -21,7 +21,7 @@ useTrainValMetaForTrain = False  # 最終 Lv2 訓練資料（dataDecidedFeatureN
 #   - 每次執行結束後，會把這次新增的結果 append 進 summaryCsv(不是覆蓋)，再從「所有歷史 + 這次新增」
 #     的完整記錄裡重新挑出 indp mcc 全域最高的那一筆，把對應的 model 檔案複製到 Lv2_best/ 底下
 #     (不需要重新訓練或重新載入，因為 Lv2_try_history 裡已經有現成的 model 檔案)。
-tuneTry = 5  # 這次執行要新增幾次嘗試
+tuneTry = 50  # 這次執行要新增幾次嘗試
 baseSessionID = 42  # 從來沒有累積過任何結果時(summaryCsv 不存在)，第一次執行從這個 sessionID 開始
 # ======================================================================================================================
 

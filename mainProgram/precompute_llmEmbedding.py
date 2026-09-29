@@ -72,7 +72,7 @@ llmEmbeddingDict = {
     "Bert_ProtBert": [False, "Rostlab/prot_bert"],
     "Bert_ProtBert_BFD": [False, "Rostlab/prot_bert_bfd"],
     "ProteinGLM_100B_int4": [False, "biomap-research/proteinglm-100b-int4"],
-    "ProteinGLM_10B_mlm": [True, "proteinglm/proteinglm-10b-mlm"]
+    "ProteinGLM_10B_mlm": [True, "biomap-research/proteinglm-10b-mlm"]
 }
 
 print(f"共 {len(allSeqDict)} 條序列（含重複）需要計算 embedding，blockSize={blockSize}")

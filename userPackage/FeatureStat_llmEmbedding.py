@@ -94,7 +94,7 @@ class LLMEmbeddingFeature:
 
     _PROTEINGLM_MODEL_DIM = {
         "biomap-research/proteinglm-100b-int4": 10240,
-        "proteinglm/proteinglm-10b-mlm": 4352,
+        "biomap-research/proteinglm-10b-mlm": 4352,
     }
     _PROTEINGLM_MODEL_DIM_DEFAULT = 10240
 
@@ -231,13 +231,27 @@ class LLMEmbeddingFeature:
             del embFeatObj.model_bert
 
         elif methodName.startswith("ProteinGLM"):
-            # BioMap ProteinGLM：GLM(ChatGLM衍生)架構，int4量化版，repo內含自訂算子，須trust_remote_code=True才能載入
-            from transformers import AutoTokenizer, AutoModel
+            # BioMap ProteinGLM：GLM(ChatGLM衍生)架構，repo內含自訂算子，須trust_remote_code=True才能載入；
+            # 100B 參數即使 int4 量化仍需約 50GB+ 記憶體，單張 GPU 的 VRAM 通常放不下，因此用 accelerate 的
+            # device_map="auto" 讓放不下的層自動卸載到 CPU RAM，之後不能再對整個模型呼叫 .to(device)，
+            # 否則會強制把已分散到多裝置的模型搬回單一 device，破壞 accelerate 的切分並導致 OOM
+            #
+            # 官方 repo 的 modeling_proteinglm.py 本身有兩個已知 bug，載入前先手動修正：
+            #   1. __init__ 會讀 config.max_length，但 ProteinGLMConfig 只定義了 seq_length，缺這個屬性會直接報錯
+            #   2. RotaryEmbedding 用 precision=config.torch_dtype 判斷要不要把 cos/sin cache 轉成 fp16，
+            #      但 config.torch_dtype 在 config.json 存的是字串 "float32" 不是真正的 torch.dtype 物件，
+            #      導致比較永遠不成立、cache 一直停留在 fp32，跟其餘轉成 fp16 的張量型別對不上而報錯
+            from transformers import AutoTokenizer, AutoModel, AutoConfig
             _, glmModelName = paramLi
             dim = cls._PROTEINGLM_MODEL_DIM.get(glmModelName, cls._PROTEINGLM_MODEL_DIM_DEFAULT)
             embFeatObj.tokenizer = AutoTokenizer.from_pretrained(glmModelName, trust_remote_code=True)
-            embFeatObj.model_glm = AutoModel.from_pretrained(glmModelName, trust_remote_code=True)
-            embFeatObj.model_glm.to(device)
+            glmConfig = AutoConfig.from_pretrained(glmModelName, trust_remote_code=True)
+            glmConfig.max_length = glmConfig.seq_length
+            glmConfig.torch_dtype = torch.float16
+            embFeatObj.model_glm = AutoModel.from_pretrained(
+                glmModelName, config=glmConfig, trust_remote_code=True, device_map="auto")
+            # 量化過的權重張量存的是 int8/uint8 整數，不是浮點數，.half() 只會轉換 layernorm/scale 等浮點張量，不會動到它
+            embFeatObj.model_glm = embFeatObj.model_glm.half()
             rowLi = [embFeatObj.proteinglmInfer(seq) for seq in tqdm(seqLi, desc=f"{methodName} embedding")]
             del embFeatObj.model_glm
 
