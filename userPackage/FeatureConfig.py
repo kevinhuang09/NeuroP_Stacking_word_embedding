@@ -145,6 +145,7 @@ llmEmbeddingFeatureDict = {"Usage": True,        # 整個 LLM embedding 類別�
                           "Bert_ProtBert_BFD": [False, "Rostlab/prot_bert_bfd"],
                           "ProteinGLM_100B_int4": [False, "biomap-research/proteinglm-100b-int4"],  # 100B int4量化，VRAM需求極高
                           "ProteinGLM_10B_mlm": [True, "biomap-research/proteinglm-10b-mlm"],  # 4352維，proteinglm/ 這個鏡像 org 缺 model.safetensors.index.json，須用 biomap-research
+                          "ProteinGLM_7B_clm": [True, "proteinglm/proteinglm-7b-clm"],  # 4096維，此模型 proteinglm/ org 底下檔案齊全，可直接用
                           }
 
 featureDict = {'iFeature': ifeatureDict,
