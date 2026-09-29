@@ -71,6 +71,7 @@ llmEmbeddingDict = {
     "Ankh3_XL": [True, "ElnaggarLab/ankh3-xl"],
     "Bert_ProtBert": [True, "Rostlab/prot_bert"],
     "Bert_ProtBert_BFD": [True, "Rostlab/prot_bert_bfd"],
+    "proteinglm-100b-int4": [True, "biomap-research/proteinglm-100b-int4"]
 }
 
 print(f"共 {len(allSeqDict)} 條序列（含重複）需要計算 embedding，blockSize={blockSize}")

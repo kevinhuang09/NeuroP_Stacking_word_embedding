@@ -41,6 +41,11 @@ class LLMEmbeddingFeature:
                           底層架構為 BertModel + BertTokenizer(ProtTrans 系列，非 T5 encoder)，
                           序列前後會各多一個 [CLS]/[SEP] 特殊token，推論時頭尾都要去掉(見 bertInfer)；
                           同樣可以同時放多個 "Bert_xxx" key 各自獨立開關。
+        "ProteinGLM_xxx": [開關, proteinGlmModel名稱]，key 開頭須為 "ProteinGLM"，例如
+                          "biomap-research/proteinglm-100b-int4"(輸出10240維)；
+                          底層架構為 GLM(ChatGLM 衍生)，須以 AutoModel/AutoTokenizer 搭配
+                          trust_remote_code=True 載入(repo 內含自訂算子)，100B 參數 int4 量化版仍需大量 VRAM；
+                          同樣可以同時放多個 "ProteinGLM_xxx" key 各自獨立開關。
         "modelDirPath" : embedding 快取 csv 存放路徑前綴(字串)，組出
                           f'{modelDirPath}_{methodName小寫}_cache.csv'，須在 Main 程式依 dataName 動態設定；
                           若為 None，則每次都重新用模型計算、不存檔快取(不建議，序列一多會很慢)。
@@ -86,6 +91,11 @@ class LLMEmbeddingFeature:
     }
     _BERT_MODEL_DIM_DEFAULT = 1024  # 新模型忘記加進 _BERT_MODEL_DIM 時的保底值
     _NON_METHOD_KEY_TUPLE = ("modelDirPath", "Usage", "blockSize")
+
+    _PROTEINGLM_MODEL_DIM = {
+        "biomap-research/proteinglm-100b-int4": 10240,
+    }
+    _PROTEINGLM_MODEL_DIM_DEFAULT = 10240
 
     def __init__(self, seqDict, llmEmbeddingDict):
         self.seqsNameLi = list(seqDict.keys())
@@ -219,8 +229,19 @@ class LLMEmbeddingFeature:
             rowLi = [embFeatObj.bertInfer(seq) for seq in tqdm(seqLi, desc=f"{methodName} embedding")]
             del embFeatObj.model_bert
 
+        elif methodName.startswith("ProteinGLM"):
+            # BioMap ProteinGLM：GLM(ChatGLM衍生)架構，int4量化版，repo內含自訂算子，須trust_remote_code=True才能載入
+            from transformers import AutoTokenizer, AutoModel
+            _, glmModelName = paramLi
+            dim = cls._PROTEINGLM_MODEL_DIM.get(glmModelName, cls._PROTEINGLM_MODEL_DIM_DEFAULT)
+            embFeatObj.tokenizer = AutoTokenizer.from_pretrained(glmModelName, trust_remote_code=True)
+            embFeatObj.model_glm = AutoModel.from_pretrained(glmModelName, trust_remote_code=True)
+            embFeatObj.model_glm.to(device)
+            rowLi = [embFeatObj.proteinglmInfer(seq) for seq in tqdm(seqLi, desc=f"{methodName} embedding")]
+            del embFeatObj.model_glm
+
         else:
-            raise ValueError(f"未知的 LLM embedding 方法 '{methodName}'，key 開頭須為 'ESM'、'T5'、'Ankh' 或 'Bert'")
+            raise ValueError(f"未知的 LLM embedding 方法 '{methodName}'，key 開頭須為 'ESM'、'T5'、'Ankh'、'Bert' 或 'ProteinGLM'")
 
         gc.collect()
         torch.cuda.empty_cache()
