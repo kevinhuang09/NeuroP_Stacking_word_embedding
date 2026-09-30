@@ -118,32 +118,12 @@ llmEmbeddingFeatureDict = {"Usage": True,        # 整個 LLM embedding 類別�
                           "blockSize": None,      # padding 長度，Main script 會依全部資料集算好後動態設定
                           "ESM_650M": [True, "esm2_t33_650M_UR50D"],
                           "ESM_3B": [True, "esm2_t36_3B_UR50D"],
-                          "ESM_8M": [False, "esm2_t6_8M_UR50D"],
-                          "ESM_35M": [False, "esm2_t12_35M_UR50D"],
-                          "ESM_150M": [False, "esm2_t30_150M_UR50D"],
-                          "ESM_15B": [False, "esm2_t48_15B_UR50D"],  # 55GB+ 權重檔+需30GB+ VRAM，目前網路環境下載不穩，先關閉
-                          "ESM_1b": [False, "esm1b_t33_650M_UR50S"],
-                          "ESM_1v_1": [False, "esm1v_t33_650M_UR90S_1"],
-                          "ESM_1v_2": [False, "esm1v_t33_650M_UR90S_2"],
-                          "ESM_1v_3": [False, "esm1v_t33_650M_UR90S_3"],
-                          "ESM_1v_4": [False, "esm1v_t33_650M_UR90S_4"],
-                          "ESM_1v_5": [False, "esm1v_t33_650M_UR90S_5"],
+                          "ESM_1b": [True, "esm1b_t33_650M_UR50S"],
+                          "ESM_1v_1": [True, "esm1v_t33_650M_UR90S_1"],
                           "T5_ProstT5": [True, "Rostlab/ProstT5"],
                           "T5_XL_UniRef50": [True, "Rostlab/prot_t5_xl_uniref50"],
-                          "T5_XL_BFD": [False, "Rostlab/prot_t5_xl_bfd"],
-                          "T5_XXL_UniRef50": [False, "Rostlab/prot_t5_xxl_uniref50"],
-                          "T5_XXL_BFD": [False, "Rostlab/prot_t5_xxl_bfd"],
-                          "T5_Base_MT_UniRef50": [False, "Rostlab/prot_t5_base_mt_uniref50"],
                           "Ankh_Base": [True, "ElnaggarLab/ankh-base"],
                           "Ankh_Large": [True, "ElnaggarLab/ankh-large"],
-                          "Ankh2_Large": [False, "ElnaggarLab/ankh2-large"],
-                          "Ankh2_Ext1": [False, "ElnaggarLab/ankh2-ext1"],
-                          "Ankh2_Ext2": [False, "ElnaggarLab/ankh2-ext2"],
-                          "Ankh3_Large": [False, "ElnaggarLab/ankh3-large"],
-                          "Ankh3_XL": [False, "ElnaggarLab/ankh3-xl"],
-                          "Bert_ProtBert": [False, "Rostlab/prot_bert"],
-                          "Bert_ProtBert_BFD": [False, "Rostlab/prot_bert_bfd"],
-                          "ProteinGLM_100B_int4": [False, "biomap-research/proteinglm-100b-int4"],  # 100B int4量化，VRAM需求極高
                           "ProteinGLM_10B_mlm": [True, "biomap-research/proteinglm-10b-mlm"],  # 4352維，proteinglm/ 這個鏡像 org 缺 model.safetensors.index.json，須用 biomap-research
                           "ProteinGLM_7B_clm": [True, "proteinglm/proteinglm-7b-clm"],  # 4096維，此模型 proteinglm/ org 底下檔案齊全，可直接用
                           }
