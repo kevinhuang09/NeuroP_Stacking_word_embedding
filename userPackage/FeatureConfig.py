@@ -96,6 +96,10 @@ centerGDPDict = {"Usage": False, "UseGap": False, "gap_size": -1}  # 若是預�
 #          esm2_t6_8M_UR50D（320維）、esm2_t12_35M_UR50D（480維）、esm2_t30_150M_UR50D（640維）、
 #          esm2_t33_650M_UR50D（1280維）、esm2_t36_3B_UR50D（2560維）、esm2_t48_15B_UR50D（5120維，模型很大）、
 #          esm1b_t33_650M_UR50S（1280維）、esm1v_t33_650M_UR90S_1~5（1280維，共5個獨立訓練的checkpoint）
+#        ESMC (EvolutionaryScale esm SDK，架構跟上面的 ESM2 不同，須用 ESMC.from_pretrained 載入)：
+#          esmc_300m（960維）、esmc_600m（1152維）
+#          （FeatureStat_llmEmbedding.py 目前尚未實作 ESMC 的推論邏輯，下方先加入 key 但開關設 False，
+#           要真的使用前須先補上對應的推論程式碼）
 #        T5 (Rostlab, 皆用 T5EncoderModel + T5Tokenizer)：
 #          Rostlab/ProstT5、Rostlab/prot_t5_xl_uniref50（皆1024維）、
 #          Rostlab/prot_t5_xl_bfd（1024維）、Rostlab/prot_t5_xxl_uniref50（1024維，模型很大~40GB+）、
@@ -116,16 +120,22 @@ centerGDPDict = {"Usage": False, "UseGap": False, "gap_size": -1}  # 若是預�
 llmEmbeddingFeatureDict = {"Usage": True,        # 整個 LLM embedding 類別總開關
                           "modelDirPath": None,   # 快取 csv 路徑前綴，Main script 會依 dataName 動態設定
                           "blockSize": None,      # padding 長度，Main script 會依全部資料集算好後動態設定
+                          "ESM_150M": [True, "esm2_t30_150M_UR50D"],
+                          "ESM_35M": [True, "esm2_t12_35M_UR50D"],
                           "ESM_650M": [True, "esm2_t33_650M_UR50D"],
                           "ESM_3B": [True, "esm2_t36_3B_UR50D"],
-                          "ESM_1b": [True, "esm1b_t33_650M_UR50S"],
-                          "ESM_1v_1": [True, "esm1v_t33_650M_UR90S_1"],
                           "T5_ProstT5": [True, "Rostlab/ProstT5"],
                           "T5_XL_UniRef50": [True, "Rostlab/prot_t5_xl_uniref50"],
+                          "T5_XL_Bfd": [True, "Rostlab/prot_t5_xl_bfd"],
                           "Ankh_Base": [True, "ElnaggarLab/ankh-base"],
                           "Ankh_Large": [True, "ElnaggarLab/ankh-large"],
+                          "Bert_ProtBert": [True, "Rostlab/prot_bert"],
+                          "Bert_ProtBertBfd": [True, "Rostlab/prot_bert_bfd"],
                           "ProteinGLM_10B_mlm": [True, "biomap-research/proteinglm-10b-mlm"],  # 4352維，proteinglm/ 這個鏡像 org 缺 model.safetensors.index.json，須用 biomap-research
                           "ProteinGLM_7B_clm": [True, "proteinglm/proteinglm-7b-clm"],  # 4096維，此模型 proteinglm/ org 底下檔案齊全，可直接用
+                          # ESMC (EvolutionaryScale esm SDK，架構跟 ESM2 不同，FeatureStat_llmEmbedding.py 尚未支援推論，先關閉保留位置)
+                          "ESMC_300M": [False, "esmc_300m"],
+                          "ESMC_600M": [False, "esmc_600m"],
                           }
 
 featureDict = {'iFeature': ifeatureDict,

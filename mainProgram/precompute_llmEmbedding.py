@@ -44,16 +44,22 @@ llmEmbeddingDict = {
     "blockSize": blockSize,
     # key 須跟 FeatureConfig.py 的 llmEmbeddingFeatureDict 保持一致，快取檔名才會對得上；
     # 這裡全部開啟（True）先把要用到的模型都算好快取，之後在 FeatureConfig.py 裡開關哪些模型都不用重算
+    "ESM_150M": [True, "esm2_t30_150M_UR50D"],
+    "ESM_35M": [True, "esm2_t12_35M_UR50D"],
     "ESM_650M": [True, "esm2_t33_650M_UR50D"],
     "ESM_3B": [True, "esm2_t36_3B_UR50D"],
-    "ESM_1b": [True, "esm1b_t33_650M_UR50S"],
-    "ESM_1v_1": [True, "esm1v_t33_650M_UR90S_1"],
     "T5_ProstT5": [True, "Rostlab/ProstT5"],
     "T5_XL_UniRef50": [True, "Rostlab/prot_t5_xl_uniref50"],
+    "T5_XL_Bfd": [True, "Rostlab/prot_t5_xl_bfd"],
     "Ankh_Base": [True, "ElnaggarLab/ankh-base"],
     "Ankh_Large": [True, "ElnaggarLab/ankh-large"],
+    "Bert_ProtBert": [True, "Rostlab/prot_bert"],
+    "Bert_ProtBertBfd": [True, "Rostlab/prot_bert_bfd"],
     "ProteinGLM_10B_mlm": [True, "biomap-research/proteinglm-10b-mlm"],
-    "ProteinGLM_7B_clm": [True, "proteinglm/proteinglm-7b-clm"]
+    "ProteinGLM_7B_clm": [True, "proteinglm/proteinglm-7b-clm"],
+    # ESMC 架構跟 ESM2 不同，FeatureStat_llmEmbedding.py 尚未支援推論，先關閉保留位置
+    "ESMC_300M": [False, "esmc_300m"],
+    "ESMC_600M": [False, "esmc_600m"],
 }
 
 print(f"共 {len(allSeqDict)} 條序列（含重複）需要計算 embedding，blockSize={blockSize}")
