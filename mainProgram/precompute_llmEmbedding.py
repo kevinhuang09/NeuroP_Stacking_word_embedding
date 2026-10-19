@@ -48,6 +48,7 @@ llmEmbeddingDict = {
     "ESM_35M": [True, "esm2_t12_35M_UR50D"],
     "ESM_650M": [True, "esm2_t33_650M_UR50D"],
     "ESM_3B": [True, "esm2_t36_3B_UR50D"],
+    "ESM_1b_650M": [True, "esm1b_t33_650M_UR50S"],
     "T5_ProstT5": [True, "Rostlab/ProstT5"],
     "T5_XL_UniRef50": [True, "Rostlab/prot_t5_xl_uniref50"],
     "T5_XL_Bfd": [True, "Rostlab/prot_t5_xl_bfd"],
