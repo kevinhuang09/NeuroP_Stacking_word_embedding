@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>NeuroPredictor - Neuropeptide Prediction</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>NeuroPredictor</h1>
+    <p class="subtitle">Predict whether amino acid sequences are neuropeptides.</p>
+
+    <label for="sequenceInput">
+      Enter amino acid sequences (one per line). Use <code>id,SEQUENCE</code> for a custom id,
+      or just <code>SEQUENCE</code> for auto-numbering:
+    </label>
+    <textarea id="sequenceInput" rows="8">example_1,GHFSTVWLCWDIQRKRFVALKVVKSAGHYTETAVDEIKLLKCVRDSDPSDPKRETIVQLIDDFRISGVNGVHVCMVLEVLGHQ
+example_2,RVINDDCPNLIGNRDLYKKVEWICEDCSNIFRNTGMATLCRKNCFFNEDFLWCVYATERTEEMSQLRQWVGILGAGRE</textarea>
+
+    <div class="button-row">
+      <button id="predictButton">Predict</button>
+      <span id="statusLabel" class="status">Ready</span>
+    </div>
+    <div id="spinner" class="spinner" hidden></div>
+
+    <h2>Results</h2>
+    <table id="resultTable">
+      <thead>
+        <tr><th>ID</th><th>Sequence</th><th>Probability</th><th>Prediction</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <h2>Log / Error Messages</h2>
+    <pre id="logBox"></pre>
+  </div>
+
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
