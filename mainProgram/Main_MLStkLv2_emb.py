@@ -47,7 +47,7 @@ from MLProcess.Scoring import Scoring
 # 的輸出分開存放，方便判斷這批結果是用 ESM/T5 embedding 跑出來的；mlScorePath 則要跟 Main_MLStkLv1_emb.py
 # 的輸出路徑一致，才能讀到對應的 Meta-Feature-Matrix。
 mlDataPath = "../data/mlData_emb/"  # Boruta 排序結果 Boruta-featureRank-{method}.csv、決定好的 train_F{N}/indp_F{N} 存這裡
-mlScorePath = "../data/mlScore_emb/"  # 內含 Main_MLStkLv1_emb.py 存的 Meta-Feature-Matrix_{dataName}_test_{normalizeMethod}.csv
+mlScorePath = "../data/mlScore_emb_iter10/"  # 內含 Main_MLStkLv1_emb.py 存的 Meta-Feature-Matrix_{dataName}_test_{normalizeMethod}.csv
 tuneModelPath = "../data/tuneModel_emb/"  # 跟 Lv1 共用根目錄，Lv2 的 model 存在 Lv2/{normalizeMethod}/ 子資料夾，不會跟 Lv1 的 feature type 資料夾撞名
 finalModelPath = "../data/finalModel_emb/"  # Lv2 finalize 好的 model
 dataName = 'NeuroP_1'
@@ -57,7 +57,7 @@ dataName = 'NeuroP_1'
 normalizeMethodList = ['robust']
 
 borutaMethod = 'XGB'  # Boruta 底層估計器：'XGB' / 'RF' / 'LGB'，跟 main_Feature_v2.py 一致用 XGB
-decidedFeatureNum = 60  #120 Boruta 排序後，決定拿前幾個 meta-feature 來訓練 Lv2 model
+decidedFeatureNum = 100  #120 Boruta 排序後，決定拿前幾個 meta-feature 來訓練 Lv2 model
 
 # Lv2 的 base learner 沿用 Lv1 debug 用過的 17 個 model
 modelNameList = ['lightgbm', 'catboost', 'rbfsvm', 'gbc', 'ridge', 'lr', 'lda', 'ada', 'knn', 'nb', 'et', 'rf',
@@ -134,7 +134,7 @@ for normalizeMethod in normalizeMethodList:
     lv2PycObj = PycaretWrapper()
     lv2PycObj.doSetup(trainData=decidedTrainDf, sessionID=42)
     lv2PycObj.doTuneModel(searchLibrary='optuna', searchAlg='tpe', includeModelList=modelNameList, foldNum=5,
-                         n_iter=100, early_stopping=False, customGridDict=None)
+                         n_iter=10, early_stopping=False, customGridDict=None)
 
     lv2TuneSavePath = os.path.join(tuneModelPath, 'Lv2', normalizeMethod + metaFeatureMatrixSuffix)
     os.makedirs(lv2TuneSavePath, exist_ok=True)

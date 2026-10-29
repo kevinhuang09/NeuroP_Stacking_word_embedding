@@ -61,16 +61,16 @@ from MLProcess.Scoring import Scoring
 # 只有 tune 過程重複多次(tuneTry)這件事不一樣，所以 mlDataPath/mlScorePath 沿用同一份即可；
 # 但輸出的 model／score 檔名都額外加上 best，避免跟 Main_MLStkLv2_emb.py 單次跑出來的結果互相覆蓋。
 mlDataPath = "../data/mlData_emb/"  # Boruta 排序結果 Boruta-featureRank-{method}.csv、決定好的 train_F{N}/indp_F{N} 存這裡
-mlScorePath = "../data/mlScore_emb/"  # 內含 Main_MLStkLv1_emb.py 存的 Meta-Feature-Matrix_{dataName}_test_{normalizeMethod}.csv
+mlScorePath = "../data/mlScore_emb_iter10/"  # 內含 Main_MLStkLv1_emb.py 存的 Meta-Feature-Matrix_{dataName}_test_{normalizeMethod}.csv
 finalModelPath = "../data/finalModel_emb/"  # 全域最佳 model 存這裡(子資料夾 Lv2_best，跟 Main_MLStkLv2_emb.py 的 Lv2 分開)
 dataName = 'NeuroP_1'
 
 # 要跟 Main_FeatureStk_emb.py / Main_MLStkLv1_emb.py 的 normalizeMethodList 保持一致，
 # 否則會去讀一份不存在的 Meta-Feature-Matrix_{dataName}_test_{normalizeMethod}.csv
-normalizeMethodList = ['robust']
+normalizeMethodList = ['standard']
 
 borutaMethod = 'XGB'  # Boruta 底層估計器：'XGB' / 'RF' / 'LGB'，跟 main_Feature_v2.py 一致用 XGB
-decidedFeatureNum = 60  # Boruta 排序後，決定拿前幾個 meta-feature 來訓練 Lv2 model
+decidedFeatureNum = 70  # Boruta 排序後，決定拿前幾個 meta-feature 來訓練 Lv2 model
 
 # Lv2 的 base learner 沿用 Lv1 debug 用過的 17 個 model
 modelNameList = ['lightgbm', 'catboost', 'rbfsvm', 'gbc', 'ridge', 'lr', 'lda', 'ada', 'knn', 'nb', 'et', 'rf',
@@ -186,7 +186,7 @@ for normalizeMethod in normalizeMethodList:
         lv2PycObj = PycaretWrapper()
         lv2PycObj.doSetup(trainData=decidedTrainDf, sessionID=trySessionID)
         lv2PycObj.doTuneModel(searchLibrary='optuna', searchAlg='tpe', includeModelList=modelNameList, foldNum=5,
-                             n_iter=100, early_stopping=False, customGridDict=None)
+                             n_iter=10, early_stopping=False, customGridDict=None)
 
         _, lv2CvScoreRank = lv2PycObj.doCompareModel(fold=5, includeModelList=lv2PycObj.tunedModelList)
         lv2CvScoreCsvPath = mlScorePath + f'Lv2_cvScore_best_session{trySessionID}_{dataName}_{normalizeMethod}{metaFeatureMatrixSuffix}.csv'

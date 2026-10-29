@@ -1,0 +1,14 @@
+{
+  "sessionID": 46,
+  "modelName": "catboost",
+  "indpScore": {
+    "accuracy": 0.9522184300341296,
+    "precision": 0.9461279461279462,
+    "recall": 0.9590443686006825,
+    "f1_score": 0.9525423728813558,
+    "auc": 0.9885380144206688,
+    "specificity": 0.9453924914675768,
+    "mcc": 0.9045211534952926,
+    "bestCutoff": 0.5
+  }
+}

@@ -249,8 +249,35 @@ class LLMEmbeddingFeature:
             glmConfig = AutoConfig.from_pretrained(glmModelName, trust_remote_code=True)
             glmConfig.max_length = glmConfig.seq_length
             glmConfig.torch_dtype = torch.float16
-            embFeatObj.model_glm = AutoModel.from_pretrained(
-                glmModelName, config=glmConfig, trust_remote_code=True, device_map="auto")
+            #   3. ProteinGLMForMaskedLM.__init__ 沒有呼叫 self.post_init()，但新版 transformers 的
+            #      from_pretrained() 收尾階段(_finalize_model_loading)無條件存取 self.all_tied_weights_keys，
+            #      這個屬性本來是 post_init() 才會設定的實例屬性，沒被設到就直接 AttributeError；
+            #      這個模型本身完全沒宣告任何 _tied_weights_keys，所以 post_init() 算出來的值本來就會是
+            #      空字典，這裡用 PreTrainedModel.__getattr__ 補一個等價的 fallback，不影響任何權重載入結果
+            from transformers.modeling_utils import PreTrainedModel as _HfPreTrainedModel
+            if not hasattr(_HfPreTrainedModel, '_neuroPAllTiedWeightsKeysPatched'):
+                _origHfGetattr = getattr(_HfPreTrainedModel, '__getattr__', None)
+
+                def _neuroPPatchedGetattr(self, name):
+                    if name == 'all_tied_weights_keys':
+                        return getattr(self, '_tied_weights_keys', None) or {}
+                    if _origHfGetattr is not None:
+                        return _origHfGetattr(self, name)
+                    return torch.nn.Module.__getattr__(self, name)
+
+                _HfPreTrainedModel.__getattr__ = _neuroPPatchedGetattr
+                _HfPreTrainedModel._neuroPAllTiedWeightsKeysPatched = True
+
+            # 只有真的放不下單張 GPU 的超大模型(100B)才需要 accelerate 的 device_map="auto" 自動切分；
+            # 10B/7B 這幾個完整放得進單張現代 GPU 的版本改成手動 .to(device)
+            b_needDeviceMap = "100b" in glmModelName.lower()
+            if b_needDeviceMap:
+                embFeatObj.model_glm = AutoModel.from_pretrained(
+                    glmModelName, config=glmConfig, trust_remote_code=True, device_map="auto")
+            else:
+                embFeatObj.model_glm = AutoModel.from_pretrained(
+                    glmModelName, config=glmConfig, trust_remote_code=True)
+                embFeatObj.model_glm.to(device)
             # 量化過的權重張量存的是 int8/uint8 整數，不是浮點數，.half() 只會轉換 layernorm/scale 等浮點張量，不會動到它
             embFeatObj.model_glm = embFeatObj.model_glm.half()
             rowLi = [embFeatObj.proteinglmInfer(seq) for seq in tqdm(seqLi, desc=f"{methodName} embedding")]
